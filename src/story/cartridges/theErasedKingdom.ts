@@ -193,6 +193,13 @@ function build(locale: Locale): StoryCartridge {
     sceneImageDirection: 'cinematic grounded high fantasy under spatial erasure, broad readable landscapes, lived-in medieval clothing, natural anatomy, saturated tactile places interrupted by silent ivory absence, cobalt action accents, vermilion deletion traces, 4:5 portrait master, one decisive event',
     sceneImageAvoid: 'the Apple Vale entry composition, a courier merely standing before a fading orchard village, decorative paper collage, giant book foreground, title lettering, border frame, or UI',
     playerImageAliases: ['border courier', 'royal courier', 'the courier', 'courier', '边境信使', '皇家信使', '信使'],
+    playerImageRole: 'the unnamed player-controlled border courier in a practical charcoal travel coat, carrying the blank brass seal; this person is never Mara and never a mounted knight',
+    playerImageExclusions: [
+      'Mara is a young female cartographer carrying an applewood ruler and must have her own different face',
+      'Oren is an armored royal knight with his own different face',
+      'Toma is an older roadkeeper with his own different face',
+      'horses, deer, wolves and ledger beasts are non-human and can never inherit a human face',
+    ],
     imageDirector: { maxQuietTurns: 1, softCooldownTurns: 0, guaranteedTriggers: ['new-location', 'rare-item', 'party-change', 'chapter-checkpoint', 'relationship-change', 'objective-change', 'skill-outcome'], softTriggers: [] } satisfies StoryImageDirector,
     mediaDirector: { imageProfile: 'fast-small', imageTarget: { width: 512, height: 640 }, videoEnabled: true, videoDuration: 5, minVideoGapTurns: 8 },
     director: {
@@ -392,20 +399,20 @@ const demoZh = [
 [encounter: phase="resolution" kind="总册猎兽" severity="2" outcome="costly-success"]
 猎兽退回果园边缘。皇家骑士奥伦在余光里勒住马，要求你交出王印；他同时命令士兵先救人。
 [choices: "把受伤的手给他看并拒绝交印"|"请他亲自核验玛拉的证物"|"带玛拉从已恢复路线撤离"]` },
-  { match: ['观察', '文字', '钟影'], imageSubject: 'player' as const, imagePrompt: 'young cartographer and courier discovering a pale ledger beast can only run along vermilion writing, ruler and chalk map revealing its path, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `你没有追着猎兽跑，而是看它落脚。它只踩有朱红痕迹的地面，碰到玛拉母亲那把没有官方文字的量尺时反而迟疑。
+  { match: ['观察', '文字', '钟影'], imageSubject: 'player' as const, imagePrompt: 'the same player protagonist border courier in the foreground studying where a pale ledger beast steps along abstract vermilion traces, face naturally visible, Mara secondary in side profile holding her ruler, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `你没有追着猎兽跑，而是看它落脚。它只踩有朱红痕迹的地面，碰到玛拉母亲那把没有官方文字的量尺时反而迟疑。
 [skill_check: skill="识破规则" dc="12" rolls="15" modifier="2" total="17" result="success"]
 [fact: id="first-danger-method" value="inspect"]
 [encounter: phase="resolution" kind="总册猎兽" severity="2" outcome="success"]
 玛拉擦掉一段线，猎兽失去道路。皇家骑士奥伦在村口勒马，要求核验王印；他显然也看见你保护了人群。
 [choices: "让奥伦亲自检查量尺"|"问他是谁下令删除苹果谷"|"趁猎兽迷失，带玛拉撤离"]` },
-  { match: ['玛拉', '假路', '引向', '诱开', '改画'], imageSubject: 'player' as const, imagePrompt: 'young cartographer rapidly drawing a false vermilion route while a courier shields her, pale ledger beast charging onto an empty orchard track, teamwork in cinematic grounded fantasy, 4:5 portrait, no readable text, no UI', content: `玛拉用量尺压住纸角，画出一条不存在却尺寸完整的路。你用最后一点见证墨让它维持十息。猎兽扑上假路，和那条路一起折进白色果园。
+  { match: ['玛拉', '假路', '引向', '诱开', '改画'], imageSubject: 'others' as const, imagePrompt: 'Mara the young cartographer rapidly drawing a false abstract vermilion route with an applewood ruler, pale ledger beast charging onto the empty orchard track, her own distinct face visible, grounded cinematic fantasy, 4:5 portrait, no readable text, no UI', content: `玛拉用量尺压住纸角，画出一条不存在却尺寸完整的路。你用最后一点见证墨让它维持十息。猎兽扑上假路，和那条路一起折进白色果园。
 [skill_check: skill="伙伴协作" dc="13" rolls="14" modifier="2" total="16" result="success"]
 [fact: id="first-danger-method" value="companion"]
 [reputation: npc="玛拉" action="trusted-her-map"]
 [encounter: phase="resolution" kind="总册猎兽" severity="2" outcome="success"]
 远处，皇家骑士奥伦勒住马。他要求你交出王印，却先命令部下救起跌倒的村民。
 [choices: "让奥伦核验玛拉的地图"|"拒绝交印并质问删除命令"|"带玛拉从安全路线撤离"]` },
-  { match: ['奥伦', '核验', '命令', '拒绝', '撤离'], imageSubject: 'player' as const, imagePrompt: 'tense dusk meeting at a partly restored orchard village, armored royal knight dismounted before courier and young cartographer, rescued villagers crossing behind, threat and reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `奥伦没有拔剑。他逐一看过量尺、王印留下的痕迹和仍在撤离的村民。
+  { match: ['奥伦', '核验', '命令', '拒绝', '撤离'], imageSubject: 'others' as const, imagePrompt: 'Oren the armored royal knight dismounted at dusk, verifying an applewood ruler and blank brass seal traces beside Mara while rescued villagers cross behind, tense reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `奥伦没有拔剑。他逐一看过量尺、王印留下的痕迹和仍在撤离的村民。
 [奥伦] [main] [压低声音]: “我见过两段历史同时把一座桥撕开。把它交给我，我能阻止灾难；不交，我就必须记住你接下来做的每一件事。”
 [character_update: character_id="oren-knight" character="奥伦" role="皇家骑士" detail="在苹果谷第一次核验玩家的证据，没有立刻逮捕" lore="相信唯一记录能阻止重页灾难，但已看见苹果谷确实存在" vitality="92" stress="38" skills="守护: 4|统率: 3"]
 [fact: id="oren-witnessed-apple-vale" value="true"]
@@ -415,7 +422,7 @@ const demoZh = [
 玛拉把王国地图铺在已恢复的地面上。古林的道路正在断裂；钟市有人连同摊位一起被删除；红堡同一座桥出现两支军队；灯塔海岸的船仍驶向一座不存在的岛。
 [session_end: reason="苹果谷序章完成。四个开放地区都可成为下一站，玛拉与此前选择会继续保留。"]
 [choices: "前往古林寻找被删旧路"|"去钟市追查消失的摊主"|"选择红堡、灯塔海岸或任何自己的路线"]` },
-  { match: ['前往古林寻找被删旧路', '进入古林'], imageSubject: 'player' as const, imagePrompt: 'border courier and Mara entering Oldwood under colossal trees, passing the same lightning-split oak twice as a forest road folds back on itself, applewood ruler measuring repeated stones, grounded cinematic high fantasy, 4:5 portrait, no text, no UI', content: `你和玛拉沿北路离开苹果谷。半个时辰后，那棵被雷劈成两半的巨树第二次出现在前方；连树根旁同一只红色甲虫都没有挪动。
+  { match: ['前往古林寻找被删旧路', '进入古林'], imageSubject: 'player' as const, imagePrompt: 'the same player protagonist border courier leading into Oldwood under colossal trees, recognizable face visible in three-quarter view, Mara following at a smaller scale with her ruler, the lightning-split oak repeating as the road folds, grounded cinematic high fantasy, 4:5 portrait, no text, no UI', content: `你和玛拉沿北路离开苹果谷。半个时辰后，那棵被雷劈成两半的巨树第二次出现在前方；连树根旁同一只红色甲虫都没有挪动。
 [map_update: new_location="古林" connected_to="苹果谷" detail="巨木之间的旧驿道被空白折成循环，溪流在断口两侧向相反方向流动" lore="王室停用旧路后，总册把仍被居民、守林人和动物使用的道路判作从未存在" facts="道路正在循环|玛拉仍同行"]
 [fact: id="oldwood-entered" value="true"]
 [clock: value="修订前第 8 天 · 09:10"]
@@ -574,20 +581,20 @@ A beast made from crossed-out names crawls uphill along the seal's trace.
 [encounter: phase="resolution" kind="Ledger beast" severity="2" outcome="costly-success"]
 The beast retreats. Royal knight Oren reins in and demands the seal—while ordering his soldiers to help the villagers first.
 [choices: "Show your wound and refuse"|"Ask him to verify Mara's proof"|"Leave with Mara by the restored route"]` },
-  { match: ['study', 'writing', 'shadow', 'check'], imageSubject: 'player' as const, imagePrompt: 'young cartographer and courier discovering a pale ledger beast can only run along vermilion writing, ruler and chalk map revealing its path, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `You watch where it steps. It can only travel on vermilion traces and hesitates at Mara's ruler, which carries no official writing.
+  { match: ['study', 'writing', 'shadow', 'check'], imageSubject: 'player' as const, imagePrompt: 'the same player protagonist border courier in the foreground studying where a pale ledger beast steps along abstract vermilion traces, face naturally visible, Mara secondary in side profile holding her ruler, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `You watch where it steps. It can only travel on vermilion traces and hesitates at Mara's ruler, which carries no official writing.
 [skill_check: skill="Expose the rule" dc="12" rolls="15" modifier="2" total="17" result="success"]
 [fact: id="first-danger-method" value="inspect"]
 [encounter: phase="resolution" kind="Ledger beast" severity="2" outcome="success"]
 Mara wipes away one line and the beast loses its road. Royal knight Oren arrives, demanding to verify the seal—and having clearly seen you protect the villagers.
 [choices: "Let Oren examine the ruler"|"Ask who ordered Apple Vale erased"|"Leave with Mara while the beast is lost"]` },
-  { match: ['mara', 'false', 'lure', 'redraw'], imageSubject: 'player' as const, imagePrompt: 'young cartographer rapidly drawing a false vermilion route while a courier shields her, pale ledger beast charging onto an empty orchard track, teamwork in cinematic grounded fantasy, 4:5 portrait, no readable text, no UI', content: `Mara pins the page with her ruler and draws a complete road that never existed. You spend a trace of witness ink to hold it for ten breaths. The beast charges and folds into the white orchard with the false path.
+  { match: ['mara', 'false', 'lure', 'redraw'], imageSubject: 'others' as const, imagePrompt: 'Mara the young cartographer rapidly drawing a false abstract vermilion route with an applewood ruler, pale ledger beast charging onto the empty orchard track, her own distinct face visible, grounded cinematic fantasy, 4:5 portrait, no readable text, no UI', content: `Mara pins the page with her ruler and draws a complete road that never existed. You spend a trace of witness ink to hold it for ten breaths. The beast charges and folds into the white orchard with the false path.
 [skill_check: skill="Companion teamwork" dc="13" rolls="14" modifier="2" total="16" result="success"]
 [fact: id="first-danger-method" value="companion"]
 [reputation: npc="Mara" action="trusted-her-map"]
 [encounter: phase="resolution" kind="Ledger beast" severity="2" outcome="success"]
 Royal knight Oren reins in. He demands the seal but first orders his soldiers to lift a fallen villager.
 [choices: "Let Oren verify Mara's map"|"Refuse and question the erasure order"|"Take Mara out by the safe route"]` },
-  { match: ['oren', 'verify', 'order', 'refuse', 'leave'], imageSubject: 'player' as const, imagePrompt: 'tense dusk meeting at a partly restored orchard village, armored royal knight dismounted before courier and young cartographer, rescued villagers crossing behind, threat and reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `Oren does not draw his sword. He examines the ruler, the seal's trace and the people still escaping.
+  { match: ['oren', 'verify', 'order', 'refuse', 'leave'], imageSubject: 'others' as const, imagePrompt: 'Oren the armored royal knight dismounted at dusk, verifying an applewood ruler and blank brass seal traces beside Mara while rescued villagers cross behind, tense reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `Oren does not draw his sword. He examines the ruler, the seal's trace and the people still escaping.
 [Oren] [main] [quietly]: "I have seen two histories tear one bridge apart. Give me that seal and I can prevent another disaster. Refuse, and I must remember everything you do next."
 [character_update: character_id="oren-knight" character="Oren" role="Royal knight" detail="Verified the player's evidence at Apple Vale without making an arrest" lore="Believes one record prevents overlap, but now knows Apple Vale existed" vitality="92" stress="38" skills="Guarding: 4|Command: 3"]
 [fact: id="oren-witnessed-apple-vale" value="true"]
@@ -597,7 +604,7 @@ Royal knight Oren reins in. He demands the seal but first orders his soldiers to
 Mara opens the kingdom map. Oldwood's road is breaking; Bell Market is losing people with their stalls; one Red Bastion bridge carries two armies; Lantern Coast ferries still seek an island that does not exist.
 [session_end: reason="Apple Vale prologue complete. All four regions are open, and Mara and every earlier choice persist."]
 [choices: "Enter Oldwood and find the erased road"|"Go to Bell Market after the missing vendors"|"Choose Red Bastion, Lantern Coast, or any route of your own"]` },
-  { match: ['Enter Oldwood and find the erased road', 'enter Oldwood'], imageSubject: 'player' as const, imagePrompt: 'border courier and Mara entering Oldwood under colossal trees, passing the same lightning-split oak twice as a forest road folds back on itself, applewood ruler measuring repeated stones, grounded cinematic high fantasy, 4:5 portrait, no text, no UI', content: `You and Mara take the north road out of Apple Vale. Half an hour later, the lightning-split oak appears ahead for a second time. Even the red beetle beside its root has not moved.
+  { match: ['Enter Oldwood and find the erased road', 'enter Oldwood'], imageSubject: 'player' as const, imagePrompt: 'the same player protagonist border courier leading into Oldwood under colossal trees, recognizable face visible in three-quarter view, Mara following at a smaller scale with her ruler, the lightning-split oak repeating as the road folds, grounded cinematic high fantasy, 4:5 portrait, no text, no UI', content: `You and Mara take the north road out of Apple Vale. Half an hour later, the lightning-split oak appears ahead for a second time. Even the red beetle beside its root has not moved.
 [map_update: new_location="Oldwood" connected_to="Apple Vale" detail="The old post road loops beneath giant trees while a stream flows in opposite directions across an ivory break" lore="After the crown retired the road, the Ledger declared a route still used by villagers, keepers and animals to have never existed" facts="Road loops back on itself|Mara remains in the party"]
 [fact: id="oldwood-entered" value="true"]
 [clock: value="Eight days before Revision · 09:10"]

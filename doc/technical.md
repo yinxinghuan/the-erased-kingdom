@@ -64,7 +64,7 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 
 ### 场景生图与人物身份
 
-`imageDirector.ts` 以 `SCENE_IMAGE_PROMPT_VERSION=7` 重建待生成场景提示。AI 的 `image_subject` 只是建议：本地导演还会检查当前镜头语义和 cartridge 的 `playerImageAliases`；只要提示明确出现玩家、主角或信使，即使模型误标为 `environment / others`，仍将 `playerVisible` 设为真。`useStoryEngine.ts` 随后为每个玩家镜头传入同一张裁切头像，并追加不可替换主角的身份硬约束。
+`imageDirector.ts` 以 `SCENE_IMAGE_PROMPT_VERSION=8` 重建待生成场景提示。`image_subject` 是明确的头像归属合同：`player` 仅用于玩家执行主要可见动作的镜头，`others / environment` 会覆盖关键词推断，避免玩家只是陪衬时仍把头像错误贴到玛拉或其他人物。只有标签缺失时，本地导演才用 `playerImageAliases` 推断。`useStoryEngine.ts` 随后为玩家主导镜头传入同一张裁切头像，并追加 PERSON A 身份演员表、稳定服装锚点、NPC 排除名单和禁止人脸/动物混合约束。
 
 渲染提示不再拼接中文故事正文；含 CJK 的 AI 图片提议会被拒绝并由本地英文导演提示兜底。最终提示还要求路牌、书、地图、信件、标签、印章和纸面全部留白或只含非语言抽象标记，禁止汉字、拉丁字母、数字与伪文字。版本迁移只重建仍处于 queued / generating / failed 的旧提示，已经生成的历史图片不自动消耗额度重画。
 

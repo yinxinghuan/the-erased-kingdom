@@ -15,7 +15,8 @@ const playerImage = latestImage(playerScene)
 assert.equal(playerImage?.data?.source, 'ai')
 assert.equal(playerImage?.data?.playerVisible, 'true')
 assert.equal(shouldUsePlayerImageReference(String(playerImage?.data?.prompt), theErasedKingdom.playerImageAliases), true)
-assert.match(String(playerImage?.data?.prompt), /same person performing the dominant player action/i)
+assert.match(String(playerImage?.data?.prompt), /dominant visual actor/i)
+assert.match(String(playerImage?.data?.prompt), /never Mara/i)
 assert.match(String(playerImage?.data?.prompt), /ABSOLUTELY NO VISIBLE WRITING OR LANGUAGE/i)
 assert.doesNotMatch(String(playerImage?.data?.prompt), /[\u3400-\u9fff]/)
 
@@ -26,12 +27,18 @@ const environmentImage = latestImage(environment)
 assert.equal(environmentImage?.data?.playerVisible, 'false')
 assert.equal(shouldUsePlayerImageReference(String(environmentImage?.data?.prompt)), false)
 
-const mislabeledCourier = applyParsedScene(initial, parseStoryProtocol(`王印落下，桥梁重新出现。
+const supportingCourier = applyParsedScene(initial, parseStoryProtocol(`王印落下，桥梁重新出现。
 [choices: "穿过桥梁"|"帮助村民"|"观察王印"]`, 'zh'), theErasedKingdom, '写回桥梁', 'wide shot of villagers and the courier crossing a restored stone bridge, blank signs, no text', 'environment')
-const mislabeledImage = latestImage(mislabeledCourier)
-assert.equal(mislabeledImage?.data?.playerVisible, 'true')
-assert.equal(shouldUsePlayerImageReference(String(mislabeledImage?.data?.prompt), theErasedKingdom.playerImageAliases), true)
-assert.doesNotMatch(String(mislabeledImage?.data?.prompt), /[\u3400-\u9fff]/)
+const supportingImage = latestImage(supportingCourier)
+assert.equal(supportingImage?.data?.playerVisible, 'false')
+assert.equal(shouldUsePlayerImageReference(String(supportingImage?.data?.prompt), theErasedKingdom.playerImageAliases), true)
+assert.doesNotMatch(String(supportingImage?.data?.prompt), /[\u3400-\u9fff]/)
+
+const maraLedScene = applyParsedScene(initial, parseStoryProtocol(`玛拉用量尺找到道路接缝，你在远处掩护。
+[choices: "跟随玛拉"|"观察接缝"|"询问托玛"]`, 'zh'), theErasedKingdom, '让玛拉测量', 'Mara measuring an ivory road seam while the courier remains a supporting figure', 'others')
+const maraLedImage = latestImage(maraLedScene)
+assert.equal(maraLedImage?.data?.playerVisible, 'false')
+assert.equal(shouldUsePlayerImageReference(String(maraLedImage?.data?.prompt), theErasedKingdom.playerImageAliases), true)
 
 const unsafeChineseProposal = applyParsedScene(initial, parseStoryProtocol(`你在总册塔内展开地图。
 [choices: "封住入口"|"寻找玛拉"|"检查地图"]`, 'zh'), theErasedKingdom, '检查地图', '主角信使在写满中文的地图前行动', 'player')

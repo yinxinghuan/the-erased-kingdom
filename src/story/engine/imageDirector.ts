@@ -133,8 +133,13 @@ function latestLocation(next: StorySave, parsed: ParsedScene): string {
 function playerIsVisible(cartridge: StoryCartridge, parsed: ParsedScene, proposal?: string, subject?: SceneImageSubject): boolean {
   const shot = proposal?.trim() || visibleBeat(parsed)
   if (/\b(no people|nobody|unoccupied|environment-only|object-only)\b|无人|空镜|纯环境|物品特写/i.test(shot)) return false
+  // Explicit authorship wins over lexical inference. `player` means that the
+  // referenced protagonist owns the visual beat; `others` must not receive
+  // the player's face even when the player appears in supporting prose.
+  if (subject === 'player') return true
+  if (subject === 'others' || subject === 'environment') return false
   if (mentionsPlayer(shot, cartridge)) return true
-  return subject === 'player'
+  return false
 }
 
 function buildScenePrompt(
@@ -164,7 +169,7 @@ function buildScenePrompt(
     `Latest visible story beat, which overrides older continuity hints: ${beat}.`,
     `Current location hint: ${CJK_RE.test(latestLocation(next, parsed)) ? (next.map.find((node) => node.current)?.id ?? 'current established location').replace(/-/g, ' ') : latestLocation(next, parsed)}. Use it only when consistent with the latest visible beat; never drag an earlier location into a newer scene.`,
     `Mandatory art direction: ${direction}.`,
-    playerVisible ? 'The player protagonist is visibly present in this frame and must be the same person performing the dominant player action. Do not assign that action to a substitute character, duplicate protagonist, generic courier or look-alike.' : '',
+    playerVisible ? `The player protagonist is the dominant visual actor in this frame and must be the same person performing the dominant player action. ${cartridge.playerImageRole ? `Their story role and visual anchor: ${cartridge.playerImageRole}.` : ''} Do not assign that action to a substitute character, duplicate protagonist, generic courier or look-alike. Keep the protagonist's face clearly visible in a natural three-quarter or frontal view; do not hide it behind a helmet, animal, companion, foreground prop or extreme profile.` : '',
     'Compose one readable moment with one dominant action and at most two focal subjects. Choose a camera position, scale, lighting pattern and silhouette that differ from earlier images.',
     'Ignore all cover art and opening-scene imagery. Derive the depicted location, action, subjects, props and weather only from the primary shot brief and latest visible story beat.',
     'Show only people, objects, places and consequences established in the latest visible story. No montage, split screen or flash-forward.',

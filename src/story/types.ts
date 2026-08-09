@@ -58,7 +58,7 @@ export interface Choice { id: string; label: string }
 export type ImageBlockStatus = 'idle' | 'queued' | 'generating' | 'ready' | 'failed'
 export type VideoBlockStatus = 'idle' | 'queued' | 'generating' | 'ready' | 'failed'
 export const ITEM_IMAGE_STYLE_VERSION = 2
-export const SCENE_IMAGE_PROMPT_VERSION = 7
+export const SCENE_IMAGE_PROMPT_VERSION = 8
 export type SceneImageSubject = 'player' | 'environment' | 'others'
 export interface StoryBlock { id: string; kind: 'narration' | 'dialogue' | 'check' | 'change' | 'event' | 'summary' | 'image'; text: string; speaker?: string; tone?: string; data?: Record<string, string | number> }
 export interface EntityMetric { label: string; value: string }
@@ -283,6 +283,8 @@ export interface StoryCartridge {
   sceneImageDirection?: string
   sceneImageAvoid?: string
   playerImageAliases?: string[]
+  playerImageRole?: string
+  playerImageExclusions?: string[]
   imageDirector?: StoryImageDirector
   mediaDirector?: StoryMediaDirector
   director?: StoryDirector
