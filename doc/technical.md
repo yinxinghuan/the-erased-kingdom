@@ -93,3 +93,9 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 - 改 Civic 布局与视觉：编辑 `StoryShell.tsx`、`story.less` 与 `doc/visual.md`；Living 分支仍保留，不能直接删除。
 - 替换入口画面：替换 `src/story/img/worlds/the-erased-kingdom*.webp`，保持入口 4:5、无 UI、无可读文字。
 - 接入异步多人：把权威世界查询结果转换为可选页边批注、公共物资与工程实体；不得直接写私人数值、背包、伙伴或终局能力。没有远端服务时保持单人模式。
+
+## 发布适配
+
+- `worker/index.js` 是 AIgram 自托管部署器要求的最小具名 `handleApi` 入口；部署器会把同一次 `npm run build` 产生的 `dist/` 封装为静态资源。
+- `GET /api/health` 只用于发布健康检查。游戏存档、玩家资料、生图和视频仍由 `src/shared/` 的平台运行时适配器负责；该 worker 不创建第二套存储或共享世界。
+- 正式主地址固定使用永久 UUID `0a86a3a1-9328-406a-955f-8a2a8d7e704c`，Pages 只作为同提交的前端镜像。

@@ -20,6 +20,7 @@
     "test:status-drawer",
     "test:i18n",
     "test:avatar",
+    "runtime-suite:opening-coherence",
     "test:ending",
     "test:oldwood",
     "test:campaign",
