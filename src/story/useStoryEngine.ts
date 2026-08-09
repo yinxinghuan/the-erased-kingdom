@@ -245,10 +245,10 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
             if (gap) await new Promise((resolve) => window.setTimeout(resolve, gap))
             const visibility = queuedSceneImage?.data?.playerVisible
             const usePlayerReference = Boolean(isScene && imageIdentity.refUrl && (
-              visibility === 'true' || (visibility !== 'false' && shouldUsePlayerImageReference(prompt))
+              visibility === 'true' || (visibility !== 'false' && shouldUsePlayerImageReference(prompt, cartridge.playerImageAliases))
             ))
             const identityPrompt = usePlayerReference
-              ? `${prompt}. Use the person in the reference image as the player protagonist in this scene. The reference is a technical identity-and-aspect plate: preserve the person's recognizable facial features and overall appearance, but ignore its original background, close crop, pose, and composition. Adapt clothing, action, lighting, camera distance, and staging naturally to this fictional world. The named player must perform the scene's main action. Keep the environment and story event visually dominant; do not turn the scene into a selfie or portrait.`
+              ? `${prompt}. HARD IDENTITY CONSTRAINT: use the person in the reference image as the one and only player protagonist in this scene, not merely as loose inspiration. Preserve their recognizable face geometry, age presentation, skin tone, hairstyle, facial hair, eyewear and distinctive facial features consistently. Never replace them with a generic fantasy courier, a different actor, a look-alike, or a companion. The reference is a technical identity-and-aspect plate: ignore its original background, close crop, pose and composition. Adapt wardrobe, action, lighting, camera distance and staging naturally to this fictional world while keeping that same identity. The referenced player must perform the scene's main action. Keep the environment and story event visually dominant; do not turn the scene into a selfie or portrait.`
               : prompt
             lastImageCallAt.current = Date.now()
             const url = await generate(usePlayerReference

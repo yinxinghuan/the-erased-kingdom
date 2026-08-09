@@ -70,6 +70,34 @@ function words(value: string): string[] {
   return value.toLowerCase().match(/[a-z][a-z'-]{2,}/g) ?? []
 }
 
+const CJK_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/
+
+function withoutRendererTextRisk(value: string): string {
+  return value
+    .replace(/["“”][^"“”]{1,100}["“”]/g, 'an unreadable blank surface')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function rendererSafeProposal(value: string | undefined): string {
+  const proposal = value?.replace(/\b16:9\s*(?:widescreen|landscape)?\b/gi, '').trim() ?? ''
+  if (!proposal || CJK_RE.test(proposal)) return ''
+  return withoutRendererTextRisk(proposal).slice(0, 620)
+}
+
+function regexEscape(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function mentionsPlayer(value: string, cartridge: StoryCartridge): boolean {
+  if (/\b(player protagonist|protagonist|player character|returning player|the player|traveler|wayfarer|adventurer|you)\b|玩家|主角|旅人|旅行者|冒险者|你/i.test(value)) return true
+  return (cartridge.playerImageAliases ?? []).some((alias) => {
+    const trimmed = alias.trim()
+    if (!trimmed) return false
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${regexEscape(trimmed)}([^\\p{L}\\p{N}]|$)`, 'iu').test(value)
+  })
+}
+
 function pairs(value: string): Set<string> {
   const tokens = words(value)
   return new Set(tokens.slice(0, -1).map((token, index) => `${token} ${tokens[index + 1]}`))
@@ -102,12 +130,11 @@ function latestLocation(next: StorySave, parsed: ParsedScene): string {
   return update?.type === 'map_update' ? update.location : next.location
 }
 
-function playerIsVisible(parsed: ParsedScene, proposal?: string, subject?: SceneImageSubject): boolean {
-  if (subject === 'player') return true
-  if (subject === 'environment' || subject === 'others') return false
-  const shot = `${proposal ?? ''} ${visibleBeat(parsed)}`
+function playerIsVisible(cartridge: StoryCartridge, parsed: ParsedScene, proposal?: string, subject?: SceneImageSubject): boolean {
+  const shot = proposal?.trim() || visibleBeat(parsed)
   if (/\b(no people|nobody|unoccupied|environment-only|object-only)\b|无人|空镜|纯环境|物品特写/i.test(shot)) return false
-  return /\b(player protagonist|protagonist|player character|returning player|the player|traveler|wayfarer|adventurer|you)\b|玩家|主角|旅人|旅行者|冒险者|你/i.test(shot)
+  if (mentionsPlayer(shot, cartridge)) return true
+  return subject === 'player'
 }
 
 function buildScenePrompt(
@@ -118,9 +145,14 @@ function buildScenePrompt(
   aiProposal?: string,
   playerVisible = false,
 ): string {
-  const beat = visibleBeat(parsed) || next.objective
-  const proposal = aiProposal?.replace(/\b16:9\s*(?:widescreen|landscape)?\b/gi, '').replace(/\s+/g, ' ').trim().slice(0, 620)
+  const rawBeat = visibleBeat(parsed) || next.objective
+  const proposal = rendererSafeProposal(aiProposal)
   const acceptedProposal = proposal && !carriesOpeningResidue(cartridge, next, parsed, proposal) ? proposal : ''
+  const beat = CJK_RE.test(rawBeat)
+    ? acceptedProposal
+      ? 'The English primary shot brief above is the complete visual event. Source-language prose is intentionally omitted from the renderer.'
+      : 'Depict only the current visible consequence indicated by the shot focus. Source-language prose is intentionally omitted from the renderer.'
+    : withoutRendererTextRisk(rawBeat).slice(0, 760)
   const direction = cartridge.sceneImageDirection ?? `${cartridge.theme.material} story-world editorial illustration`
   const target = cartridge.mediaDirector?.imageTarget ?? { width: 640, height: 360 }
   const frameInstruction = target.height > target.width
@@ -130,18 +162,20 @@ function buildScenePrompt(
     frameInstruction,
     acceptedProposal ? `Primary shot brief: ${acceptedProposal}.` : `Primary shot focus: ${focusFor(reason, parsed, next)}.`,
     `Latest visible story beat, which overrides older continuity hints: ${beat}.`,
-    `Current location hint: ${latestLocation(next, parsed)}. Use it only when consistent with the latest visible beat; never drag an earlier location into a newer scene.`,
+    `Current location hint: ${CJK_RE.test(latestLocation(next, parsed)) ? (next.map.find((node) => node.current)?.id ?? 'current established location').replace(/-/g, ' ') : latestLocation(next, parsed)}. Use it only when consistent with the latest visible beat; never drag an earlier location into a newer scene.`,
     `Mandatory art direction: ${direction}.`,
-    playerVisible ? 'The player protagonist is visibly present in this frame and must be the same person performing the dominant player action. Do not assign that action to a substitute character.' : '',
+    playerVisible ? 'The player protagonist is visibly present in this frame and must be the same person performing the dominant player action. Do not assign that action to a substitute character, duplicate protagonist, generic courier or look-alike.' : '',
     'Compose one readable moment with one dominant action and at most two focal subjects. Choose a camera position, scale, lighting pattern and silhouette that differ from earlier images.',
     'Ignore all cover art and opening-scene imagery. Derive the depicted location, action, subjects, props and weather only from the primary shot brief and latest visible story beat.',
-    'Show only people, objects, places and consequences established in the latest visible story. No montage, split screen, flash-forward, readable text, letters, logo, border, poster layout or UI.',
+    'Show only people, objects, places and consequences established in the latest visible story. No montage, split screen or flash-forward.',
+    'ABSOLUTELY NO VISIBLE WRITING OR LANGUAGE OF ANY KIND. Every sign, book, ledger, map, letter, notice, label, seal and paper surface must be blank or carry only non-linguistic abstract marks. No Chinese, Hanzi, CJK glyphs, Latin letters, words, numbers, calligraphy, pseudo-text, logo, border, poster layout or UI.',
   ].filter(Boolean).join(' ')
 }
 
-export function shouldUsePlayerImageReference(prompt: string): boolean {
+export function shouldUsePlayerImageReference(prompt: string, aliases: string[] = []): boolean {
   const explicitlyEmpty = /\b(no people|nobody|unoccupied|environment-only|object-only)\b|无人|空镜|纯环境|物品特写/i.test(prompt)
-  const playerVisible = /\b(player protagonist|protagonist|player character|returning player|the player|traveler|wayfarer|adventurer|you)\b|玩家|主角|旅人|旅行者|冒险者/i.test(prompt)
+  const aliasVisible = aliases.some((alias) => alias.trim() && new RegExp(`(^|[^\\p{L}\\p{N}])${regexEscape(alias.trim())}([^\\p{L}\\p{N}]|$)`, 'iu').test(prompt))
+  const playerVisible = /\b(player protagonist|protagonist|player character|returning player|the player|traveler|wayfarer|adventurer|you)\b|玩家|主角|旅人|旅行者|冒险者/i.test(prompt) || aliasVisible
   return playerVisible && !explicitlyEmpty
 }
 
@@ -160,7 +194,7 @@ export function upgradePendingSceneImagePrompts(save: StorySave, cartridge: Stor
       raw: '',
     }
     const historical = { ...save, location: block.text || save.location }
-    const visible = playerIsVisible(parsed)
+    const visible = playerIsVisible(cartridge, parsed)
     changed = true
     return {
       ...block,
@@ -186,7 +220,7 @@ export function chooseSceneImage(
 ): SceneImageDecision {
   const proposal = aiPrompt?.trim()
   if (proposal) {
-    const visible = playerIsVisible(parsed, proposal, imageSubject)
+    const visible = playerIsVisible(cartridge, parsed, proposal, imageSubject)
     return {
       prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', proposal, visible),
       source: 'ai',
@@ -196,7 +230,7 @@ export function chooseSceneImage(
   }
 
   const director = cartridge.imageDirector
-  const visible = playerIsVisible(parsed, undefined, imageSubject)
+  const visible = playerIsVisible(cartridge, parsed, undefined, imageSubject)
   const triggers = detectTriggers(previous, parsed)
   const guaranteed = director ? firstTrigger(triggers, director.guaranteedTriggers) : undefined
   if (guaranteed) return { prompt: buildScenePrompt(cartridge, next, parsed, guaranteed, undefined, visible), source: 'director', reason: guaranteed, playerVisible: visible }

@@ -146,6 +146,17 @@ if (testCase === 'persistence') {
   if (!openingCharacterRequest || openingCharacterRequest.ref_url !== preparedAvatarUrl) throw new Error(`prepared avatar reference was not used for the opening player: ${JSON.stringify(imageRequests)}`)
   const actionCharacterRequest = imageRequests.find((request) => request.ref_url && String(request.prompt).includes('same person performing the dominant player action'))
   if (!actionCharacterRequest) throw new Error('identity action contract missing from the first chosen action prompt')
+  await page.locator('.ct-turn-next').click()
+  await page.getByRole('button', { name: '写回桥梁，保住离村道路' }).click()
+  await page.waitForFunction(() => {
+    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    return archive.worlds?.['the-erased-kingdom']?.blocks?.find((block) => block.id === 'image-2')?.data?.status === 'ready'
+  }, null, { timeout: 12000 })
+  const protagonistRequests = imageRequests.filter((request) => request.ref_url)
+  if (protagonistRequests.length < 3) throw new Error(`consecutive protagonist scenes lost the avatar reference: ${JSON.stringify(imageRequests)}`)
+  if (protagonistRequests.some((request) => request.ref_url !== preparedAvatarUrl)) throw new Error(`player reference changed between scenes: ${JSON.stringify(protagonistRequests)}`)
+  if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD IDENTITY CONSTRAINT'))) throw new Error('a player scene omitted the hard identity contract')
+  if (protagonistRequests.some((request) => /[\u3400-\u9fff]/.test(String(request.prompt)))) throw new Error('a renderer prompt leaked Chinese characters')
 } else if (testCase === 'finale-flow') {
   const route = [
     '拉住正在褪色的玛拉', '写回面包房，保住补给和村民', '检查它是否只追逐文字', '让奥伦亲自检查量尺',

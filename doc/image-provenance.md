@@ -14,6 +14,13 @@
 - 第一批结果错误生成了标题、纸框与皇冠，已保存到 `_production/rejected/`，没有进入游戏；旧入口图预演了“拉住玛拉”的选择结果，也已移入 `_production/rejected/the-erased-kingdom-entry-choice-result.webp`。
 - 最终图后处理：仅进行格式转换或等比缩放，不增加文字、徽章或程序化图形。正式平台海报输出 1024×1024 PNG，入口保持接近 4:5 的竖幅原图。
 
+## 2026-08-10 运行时身份连续性抽样
+
+- 测试人物参考图：https://images.aiwaves.tech/uploads/1786302814305-vh8aae7e4qq.jpg
+- 同一人物 · 面包房盖章场景：https://cdn.aiwaves.tech/prod/telegram/avatar/0/1786302891473427.webp
+- 同一人物 · 桥上战斗场景：https://cdn.aiwaves.tech/prod/telegram/avatar/0/1786302916771999.webp
+- 两张场景都使用同一 `ref_url` 串行生成；人工检查确认短卷发、绿眼、右脸伤痕和脸型连续，且没有中文或其他可读文字。测试人物为制作期虚构身份，不是用户资料。
+
 ## Runtime cover prompt
 
 ```text

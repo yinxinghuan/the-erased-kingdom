@@ -192,6 +192,7 @@ function build(locale: Locale): StoryCartridge {
     itemImageDirection: 'museum-quality grounded high-fantasy artifact study on dark cloth and pale registry paper, restrained brass and vermilion details, object only, no people, no readable text',
     sceneImageDirection: 'cinematic grounded high fantasy under spatial erasure, broad readable landscapes, lived-in medieval clothing, natural anatomy, saturated tactile places interrupted by silent ivory absence, cobalt action accents, vermilion deletion traces, 4:5 portrait master, one decisive event',
     sceneImageAvoid: 'the Apple Vale entry composition, a courier merely standing before a fading orchard village, decorative paper collage, giant book foreground, title lettering, border frame, or UI',
+    playerImageAliases: ['border courier', 'royal courier', 'the courier', 'courier', '边境信使', '皇家信使', '信使'],
     imageDirector: { maxQuietTurns: 1, softCooldownTurns: 0, guaranteedTriggers: ['new-location', 'rare-item', 'party-change', 'chapter-checkpoint', 'relationship-change', 'objective-change', 'skill-outcome'], softTriggers: [] } satisfies StoryImageDirector,
     mediaDirector: { imageProfile: 'fast-small', imageTarget: { width: 512, height: 640 }, videoEnabled: true, videoDuration: 5, minVideoGapTurns: 8 },
     director: {
@@ -359,7 +360,7 @@ const demoZh = [
 [widget: vitality, remove: 5]
 量尺、你的脚步和桥下仍在流动的水互相印证。空白王印可以把桥写回，也可以把这次机会留给村里另一处。
 [choices: "立刻写回桥梁"|"带证据回去写回面包房"|"登上山坡写回钟楼"]` },
-  { match: ['写回桥', '桥梁'], imageSubject: 'environment' as const, imagePrompt: 'milestone fantasy restoration, ivory absence growing back into a complete stone orchard bridge under a blank brass seal glow, villagers and courier crossing, young cartographer crying with relief, vermilion trace, 4:5 portrait, no text, no UI', content: `王印落下，空白里先长出桥墩，再长出潮湿石缝与车轮声。玛拉蹲下触摸母亲量过的第三十七米。
+  { match: ['写回桥', '桥梁'], imageSubject: 'player' as const, imagePrompt: 'milestone fantasy restoration, ivory absence growing back into a complete stone orchard bridge under a blank brass seal glow, villagers and courier crossing, young cartographer crying with relief, vermilion trace, 4:5 portrait, no text, no UI', content: `王印落下，空白里先长出桥墩，再长出潮湿石缝与车轮声。玛拉蹲下触摸母亲量过的第三十七米。
 [fact: id="apple-anchor" value="bridge"]
 [fact: id="apple-safe-route" value="true"]
 [map_update: new_location="苹果谷石桥" connected_to="苹果谷" detail="被王印暂时写回的离村道路，石缝仍带朱红余光" lore="玛拉母亲的量尺、活人脚步与河水共同证明它存在" facts="可安全撤离|本章结束前保持存在"]
@@ -368,7 +369,7 @@ const demoZh = [
 桥下响起刮纸般的喘息。姓名被划掉后形成的猎兽，正沿朱红痕迹爬来。
 [encounter: phase="warning" kind="总册猎兽" severity="2"]
 [choices: "挡在桥头保护撤离的人"|"观察猎兽如何追踪文字"|"让玛拉用地图把它引向假路"]` },
-  { match: ['面包房', '补给'], imageSubject: 'environment' as const, imagePrompt: 'milestone fantasy restoration, warm village bakery materializing from ivory absence around glowing ovens and flour-covered families, courier pressing blank seal to threshold, young cartographer witnessing, 4:5 portrait, no text, no UI', content: `王印落下，面包香气比墙壁更早回来。炉火照出三名原本已经被忘记的村民，他们立刻把食物分给正在撤离的人。
+  { match: ['面包房', '补给'], imageSubject: 'player' as const, imagePrompt: 'milestone fantasy restoration, warm village bakery materializing from ivory absence around glowing ovens and flour-covered families, courier pressing blank seal to threshold, young cartographer witnessing, 4:5 portrait, no text, no UI', content: `王印落下，面包香气比墙壁更早回来。炉火照出三名原本已经被忘记的村民，他们立刻把食物分给正在撤离的人。
 [fact: id="apple-anchor" value="bakery"]
 [fact: id="apple-supply-source" value="true"]
 [widget: supplies, add: 3]
@@ -376,7 +377,7 @@ const demoZh = [
 屋顶响起刮纸般的爪声。姓名被划掉后形成的猎兽，正沿王印痕迹逼近。
 [encounter: phase="warning" kind="总册猎兽" severity="2"]
 [choices: "守住门口让村民撤离"|"检查它是否只追逐文字"|"让玛拉画一条通向空屋的假路"]` },
-  { match: ['钟楼', '预警', '山坡'], imageSubject: 'environment' as const, imagePrompt: 'milestone fantasy restoration, hilltop bell tower reappearing from ivory absence as warm bronze bell rings over fading orchard village, courier and cartographer beneath, distant armored rider, 4:5 portrait, no text, no UI', content: `王印落下，钟声从不存在的地方撞回山谷。每一声都让褪色的村民多出一口逃离的时间，也照出远方一名骑士的轮廓。
+  { match: ['钟楼', '预警', '山坡'], imageSubject: 'player' as const, imagePrompt: 'milestone fantasy restoration, hilltop bell tower reappearing from ivory absence as warm bronze bell rings over fading orchard village, courier and cartographer beneath, distant armored rider, 4:5 portrait, no text, no UI', content: `王印落下，钟声从不存在的地方撞回山谷。每一声都让褪色的村民多出一口逃离的时间，也照出远方一名骑士的轮廓。
 [fact: id="apple-anchor" value="bell-tower"]
 [fact: id="apple-warning-system" value="true"]
 [widget: recognition, add: 8]
@@ -391,20 +392,20 @@ const demoZh = [
 [encounter: phase="resolution" kind="总册猎兽" severity="2" outcome="costly-success"]
 猎兽退回果园边缘。皇家骑士奥伦在余光里勒住马，要求你交出王印；他同时命令士兵先救人。
 [choices: "把受伤的手给他看并拒绝交印"|"请他亲自核验玛拉的证物"|"带玛拉从已恢复路线撤离"]` },
-  { match: ['观察', '文字', '钟影'], imageSubject: 'others' as const, imagePrompt: 'young cartographer and courier discovering a pale ledger beast can only run along vermilion writing, ruler and chalk map revealing its path, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `你没有追着猎兽跑，而是看它落脚。它只踩有朱红痕迹的地面，碰到玛拉母亲那把没有官方文字的量尺时反而迟疑。
+  { match: ['观察', '文字', '钟影'], imageSubject: 'player' as const, imagePrompt: 'young cartographer and courier discovering a pale ledger beast can only run along vermilion writing, ruler and chalk map revealing its path, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `你没有追着猎兽跑，而是看它落脚。它只踩有朱红痕迹的地面，碰到玛拉母亲那把没有官方文字的量尺时反而迟疑。
 [skill_check: skill="识破规则" dc="12" rolls="15" modifier="2" total="17" result="success"]
 [fact: id="first-danger-method" value="inspect"]
 [encounter: phase="resolution" kind="总册猎兽" severity="2" outcome="success"]
 玛拉擦掉一段线，猎兽失去道路。皇家骑士奥伦在村口勒马，要求核验王印；他显然也看见你保护了人群。
 [choices: "让奥伦亲自检查量尺"|"问他是谁下令删除苹果谷"|"趁猎兽迷失，带玛拉撤离"]` },
-  { match: ['玛拉', '假路', '引向', '诱开', '改画'], imageSubject: 'others' as const, imagePrompt: 'young cartographer rapidly drawing a false vermilion route while a courier shields her, pale ledger beast charging onto an empty orchard track, teamwork in cinematic grounded fantasy, 4:5 portrait, no readable text, no UI', content: `玛拉用量尺压住纸角，画出一条不存在却尺寸完整的路。你用最后一点见证墨让它维持十息。猎兽扑上假路，和那条路一起折进白色果园。
+  { match: ['玛拉', '假路', '引向', '诱开', '改画'], imageSubject: 'player' as const, imagePrompt: 'young cartographer rapidly drawing a false vermilion route while a courier shields her, pale ledger beast charging onto an empty orchard track, teamwork in cinematic grounded fantasy, 4:5 portrait, no readable text, no UI', content: `玛拉用量尺压住纸角，画出一条不存在却尺寸完整的路。你用最后一点见证墨让它维持十息。猎兽扑上假路，和那条路一起折进白色果园。
 [skill_check: skill="伙伴协作" dc="13" rolls="14" modifier="2" total="16" result="success"]
 [fact: id="first-danger-method" value="companion"]
 [reputation: npc="玛拉" action="trusted-her-map"]
 [encounter: phase="resolution" kind="总册猎兽" severity="2" outcome="success"]
 远处，皇家骑士奥伦勒住马。他要求你交出王印，却先命令部下救起跌倒的村民。
 [choices: "让奥伦核验玛拉的地图"|"拒绝交印并质问删除命令"|"带玛拉从安全路线撤离"]` },
-  { match: ['奥伦', '核验', '命令', '拒绝', '撤离'], imageSubject: 'others' as const, imagePrompt: 'tense dusk meeting at a partly restored orchard village, armored royal knight dismounted before courier and young cartographer, rescued villagers crossing behind, threat and reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `奥伦没有拔剑。他逐一看过量尺、王印留下的痕迹和仍在撤离的村民。
+  { match: ['奥伦', '核验', '命令', '拒绝', '撤离'], imageSubject: 'player' as const, imagePrompt: 'tense dusk meeting at a partly restored orchard village, armored royal knight dismounted before courier and young cartographer, rescued villagers crossing behind, threat and reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `奥伦没有拔剑。他逐一看过量尺、王印留下的痕迹和仍在撤离的村民。
 [奥伦] [main] [压低声音]: “我见过两段历史同时把一座桥撕开。把它交给我，我能阻止灾难；不交，我就必须记住你接下来做的每一件事。”
 [character_update: character_id="oren-knight" character="奥伦" role="皇家骑士" detail="在苹果谷第一次核验玩家的证据，没有立刻逮捕" lore="相信唯一记录能阻止重页灾难，但已看见苹果谷确实存在" vitality="92" stress="38" skills="守护: 4|统率: 3"]
 [fact: id="oren-witnessed-apple-vale" value="true"]
@@ -541,7 +542,7 @@ Outside, Mara measures an invisible road with her mother's ruler. You must decid
 [widget: vitality, remove: 5]
 The ruler, your footsteps and the moving river agree. The seal can restore the bridge, or you can carry the proof to another landmark.
 [choices: "Restore the bridge now"|"Carry the proof to the bakery"|"Climb to restore the hill bell"]` },
-  { match: ['restore the bridge', 'escape road'], imageSubject: 'environment' as const, imagePrompt: 'milestone fantasy restoration, ivory absence growing back into a complete stone orchard bridge under a blank brass seal glow, villagers and courier crossing, young cartographer crying with relief, vermilion trace, 4:5 portrait, no text, no UI', content: `The seal falls. Piers grow first, then wet mortar and wheel noise. Mara touches the thirty-seventh meter her mother once measured.
+  { match: ['restore the bridge', 'escape road'], imageSubject: 'player' as const, imagePrompt: 'milestone fantasy restoration, ivory absence growing back into a complete stone orchard bridge under a blank brass seal glow, villagers and courier crossing, young cartographer crying with relief, vermilion trace, 4:5 portrait, no text, no UI', content: `The seal falls. Piers grow first, then wet mortar and wheel noise. Mara touches the thirty-seventh meter her mother once measured.
 [fact: id="apple-anchor" value="bridge"]
 [fact: id="apple-safe-route" value="true"]
 [map_update: new_location="Apple Vale Stone Bridge" connected_to="Apple Vale" detail="An escape road temporarily restored by the seal" lore="Mara's ruler, living footsteps and the river jointly prove it" facts="Safe evacuation|Persists until chapter end"]
@@ -550,7 +551,7 @@ The ruler, your footsteps and the moving river agree. The seal can restore the b
 Below, breathing like scraped paper, a beast made from crossed-out names climbs the seal's vermilion trace.
 [encounter: phase="warning" kind="Ledger beast" severity="2"]
 [choices: "Hold the bridge while people escape"|"Study how the beast follows writing"|"Let Mara lure it onto a false map road"]` },
-  { match: ['bakery', 'supplies'], imageSubject: 'environment' as const, imagePrompt: 'milestone fantasy restoration, warm village bakery materializing from ivory absence around glowing ovens and flour-covered families, courier pressing blank seal to threshold, young cartographer witnessing, 4:5 portrait, no text, no UI', content: `The smell of bread returns before the walls. Three forgotten villagers appear in the firelight and begin sharing food with evacuees.
+  { match: ['bakery', 'supplies'], imageSubject: 'player' as const, imagePrompt: 'milestone fantasy restoration, warm village bakery materializing from ivory absence around glowing ovens and flour-covered families, courier pressing blank seal to threshold, young cartographer witnessing, 4:5 portrait, no text, no UI', content: `The smell of bread returns before the walls. Three forgotten villagers appear in the firelight and begin sharing food with evacuees.
 [fact: id="apple-anchor" value="bakery"]
 [fact: id="apple-supply-source" value="true"]
 [widget: supplies, add: 3]
@@ -558,7 +559,7 @@ Below, breathing like scraped paper, a beast made from crossed-out names climbs 
 Claws scrape the roof. A beast made from crossed-out names follows the seal's trace.
 [encounter: phase="warning" kind="Ledger beast" severity="2"]
 [choices: "Guard the door while villagers escape"|"Check whether it can only follow writing"|"Let Mara draw a false road toward an empty house"]` },
-  { match: ['bell', 'warning', 'hill'], imageSubject: 'environment' as const, imagePrompt: 'milestone fantasy restoration, hilltop bell tower reappearing from ivory absence as warm bronze bell rings over fading orchard village, courier and cartographer beneath, distant armored rider, 4:5 portrait, no text, no UI', content: `The seal falls and a bell strikes from a place that did not exist. Each note gives the fading villagers one more breath to flee and reveals a rider in the distance.
+  { match: ['bell', 'warning', 'hill'], imageSubject: 'player' as const, imagePrompt: 'milestone fantasy restoration, hilltop bell tower reappearing from ivory absence as warm bronze bell rings over fading orchard village, courier and cartographer beneath, distant armored rider, 4:5 portrait, no text, no UI', content: `The seal falls and a bell strikes from a place that did not exist. Each note gives the fading villagers one more breath to flee and reveals a rider in the distance.
 [fact: id="apple-anchor" value="bell-tower"]
 [fact: id="apple-warning-system" value="true"]
 [widget: recognition, add: 8]
@@ -573,20 +574,20 @@ A beast made from crossed-out names crawls uphill along the seal's trace.
 [encounter: phase="resolution" kind="Ledger beast" severity="2" outcome="costly-success"]
 The beast retreats. Royal knight Oren reins in and demands the seal—while ordering his soldiers to help the villagers first.
 [choices: "Show your wound and refuse"|"Ask him to verify Mara's proof"|"Leave with Mara by the restored route"]` },
-  { match: ['study', 'writing', 'shadow', 'check'], imageSubject: 'others' as const, imagePrompt: 'young cartographer and courier discovering a pale ledger beast can only run along vermilion writing, ruler and chalk map revealing its path, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `You watch where it steps. It can only travel on vermilion traces and hesitates at Mara's ruler, which carries no official writing.
+  { match: ['study', 'writing', 'shadow', 'check'], imageSubject: 'player' as const, imagePrompt: 'young cartographer and courier discovering a pale ledger beast can only run along vermilion writing, ruler and chalk map revealing its path, villagers escaping behind, cinematic grounded fantasy, 4:5 portrait, no text, no UI', content: `You watch where it steps. It can only travel on vermilion traces and hesitates at Mara's ruler, which carries no official writing.
 [skill_check: skill="Expose the rule" dc="12" rolls="15" modifier="2" total="17" result="success"]
 [fact: id="first-danger-method" value="inspect"]
 [encounter: phase="resolution" kind="Ledger beast" severity="2" outcome="success"]
 Mara wipes away one line and the beast loses its road. Royal knight Oren arrives, demanding to verify the seal—and having clearly seen you protect the villagers.
 [choices: "Let Oren examine the ruler"|"Ask who ordered Apple Vale erased"|"Leave with Mara while the beast is lost"]` },
-  { match: ['mara', 'false', 'lure', 'redraw'], imageSubject: 'others' as const, imagePrompt: 'young cartographer rapidly drawing a false vermilion route while a courier shields her, pale ledger beast charging onto an empty orchard track, teamwork in cinematic grounded fantasy, 4:5 portrait, no readable text, no UI', content: `Mara pins the page with her ruler and draws a complete road that never existed. You spend a trace of witness ink to hold it for ten breaths. The beast charges and folds into the white orchard with the false path.
+  { match: ['mara', 'false', 'lure', 'redraw'], imageSubject: 'player' as const, imagePrompt: 'young cartographer rapidly drawing a false vermilion route while a courier shields her, pale ledger beast charging onto an empty orchard track, teamwork in cinematic grounded fantasy, 4:5 portrait, no readable text, no UI', content: `Mara pins the page with her ruler and draws a complete road that never existed. You spend a trace of witness ink to hold it for ten breaths. The beast charges and folds into the white orchard with the false path.
 [skill_check: skill="Companion teamwork" dc="13" rolls="14" modifier="2" total="16" result="success"]
 [fact: id="first-danger-method" value="companion"]
 [reputation: npc="Mara" action="trusted-her-map"]
 [encounter: phase="resolution" kind="Ledger beast" severity="2" outcome="success"]
 Royal knight Oren reins in. He demands the seal but first orders his soldiers to lift a fallen villager.
 [choices: "Let Oren verify Mara's map"|"Refuse and question the erasure order"|"Take Mara out by the safe route"]` },
-  { match: ['oren', 'verify', 'order', 'refuse', 'leave'], imageSubject: 'others' as const, imagePrompt: 'tense dusk meeting at a partly restored orchard village, armored royal knight dismounted before courier and young cartographer, rescued villagers crossing behind, threat and reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `Oren does not draw his sword. He examines the ruler, the seal's trace and the people still escaping.
+  { match: ['oren', 'verify', 'order', 'refuse', 'leave'], imageSubject: 'player' as const, imagePrompt: 'tense dusk meeting at a partly restored orchard village, armored royal knight dismounted before courier and young cartographer, rescued villagers crossing behind, threat and reluctant respect, grounded high fantasy, 4:5 portrait, no text, no UI', content: `Oren does not draw his sword. He examines the ruler, the seal's trace and the people still escaping.
 [Oren] [main] [quietly]: "I have seen two histories tear one bridge apart. Give me that seal and I can prevent another disaster. Refuse, and I must remember everything you do next."
 [character_update: character_id="oren-knight" character="Oren" role="Royal knight" detail="Verified the player's evidence at Apple Vale without making an arrest" lore="Believes one record prevents overlap, but now knows Apple Vale existed" vitality="92" stress="38" skills="Guarding: 4|Command: 3"]
 [fact: id="oren-witnessed-apple-vale" value="true"]
