@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "projectId": "the-erased-kingdom",
+  "uuid": "0a86a3a1-9328-406a-955f-8a2a8d7e704c",
+  "sourceCommit": null,
+  "buildCommand": "npm run build",
+  "distPath": "dist",
+  "posterPath": "public/poster.png",
+  "noticesPath": "public/THIRD_PARTY_NOTICES.txt",
+  "tests": [
+    "test:protocol",
+    "test:state-integrity",
+    "test:danger",
+    "test:choice-recovery",
+    "test:image-director",
+    "test:item-images",
+    "test:persistence",
+    "test:audio",
+    "test:restart",
+    "test:status-drawer",
+    "test:i18n",
+    "test:avatar",
+    "test:ending",
+    "test:oldwood",
+    "test:campaign",
+    "test:decision-context",
+    "test:finale-flow",
+    "test:responsive",
+    "build"
+  ],
+  "testSummary": {
+    "campaignTurnsPerLocale": 31,
+    "chapters": 8,
+    "endingAnchors": 8,
+    "browserTargetSizes": ["320x568", "390x844", "1024x768", "1440x900"],
+    "uiFlow": "entry -> decision -> result -> next -> decision -> finale -> ending",
+    "productionMediaStillRequiresLiveSampling": true
+  },
+  "deployment": {
+    "performed": false,
+    "authorityUrl": "https://game.aiwaves.tech/0a86a3a1-9328-406a-955f-8a2a8d7e704c/",
+    "pagesMirrorUrl": "https://yinxinghuan.github.io/the-erased-kingdom/",
+    "repository": "https://github.com/yinxinghuan/the-erased-kingdom"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "purpose": "Generate a unique, persistent ending from saved player facts without inventing unsupported reality rules or erasing prior consequences.",
+  "minimumFinaleFacts": {
+    "witnessPages": 4,
+    "reachedLedgerTower": true,
+    "resolvedPromises": 1
+  },
+  "capabilities": [
+    {
+      "id": "amend-single-ledger",
+      "requires": ["witness_pages>=4", "ledger_access"],
+      "meaning": "Keep one central ledger but bind it to public evidence and appeal.",
+      "mandatoryCosts": ["some_unproven_people_remain_in_margins"]
+    },
+    {
+      "id": "dismantle-ledger",
+      "requires": ["ledger_access", "blank_seal_owned"],
+      "meaning": "Destroy the sole authority that makes records real.",
+      "mandatoryCosts": ["roads_and_claims_destabilize"]
+    },
+    {
+      "id": "distribute-witnessing",
+      "requires": ["witness_pages=6", "reconciled_companions>=2", "regional_sources_preserved>=4"],
+      "meaning": "Let independent local witnesses cross-check permanent facts.",
+      "mandatoryCosts": ["restoration_becomes_slow_and_disputed"]
+    },
+    {
+      "id": "hold-margin-passage",
+      "requires": ["margin_witness_page", "player_unregistered", "blank_seal_owned"],
+      "meaning": "Keep a stable path between ordinary reality and the Margins.",
+      "mandatoryCosts": ["a_named_keeper_must_be_bound_to_the_passage"]
+    },
+    {
+      "id": "permit-bounded-overlap",
+      "requires": ["witness_pages=6", "paired_conflicts_resolved>=3", "no_false_evidence"],
+      "meaning": "Allow incompatible but well-supported histories to coexist in bounded regions.",
+      "mandatoryCosts": ["some_people_face_alternate_lives", "geography_remains_strange"]
+    },
+    {
+      "id": "claim-ledger-authority",
+      "requires": ["ledger_access", "recognition>=75"],
+      "meaning": "Place the player in direct control of the reality registry.",
+      "mandatoryCosts": ["companions_question_free_will", "player_becomes_isolated_by_power"]
+    },
+    {
+      "id": "negotiate-limited-revision",
+      "requires": ["veyr_present", "veyr_dialogue_completed", "witness_pages>=4"],
+      "meaning": "Work with Veyr to protect a proven list while preserving stability.",
+      "mandatoryCosts": ["unlisted_people_are_lost"]
+    },
+    {
+      "id": "evacuate-and-refuse-rule",
+      "requires": ["safe_routes>=3", "blank_seal_owned", "communities_warned>=2"],
+      "meaning": "Save reachable people and refuse to impose a permanent answer on the kingdom.",
+      "mandatoryCosts": ["kingdom_question_remains_unresolved"]
+    },
+    {
+      "id": "restore-player-registration",
+      "requires": ["eli_truth_known", "player_birth_evidence"],
+      "meaning": "Make the player stably recognized by people, roads and institutions.",
+      "mandatoryCosts": ["player_loses_unrestricted_margin_crossing"]
+    },
+    {
+      "id": "surrender-player-name",
+      "requires": ["player_unregistered", "blank_seal_owned"],
+      "meaning": "Spend the player's public identity to stabilize a person, place or passage.",
+      "mandatoryCosts": ["public_memory_of_player_fades"]
+    }
+  ],
+  "incompatibilities": [
+    ["amend-single-ledger", "dismantle-ledger"],
+    ["claim-ledger-authority", "evacuate-and-refuse-rule"],
+    ["restore-player-registration", "surrender-player-name"],
+    ["restore-player-registration", "hold-margin-passage"]
+  ],
+  "anchorFamilies": [
+    "unique-dawn",
+    "open-roads",
+    "common-atlas",
+    "margin-keeper",
+    "crown-of-names",
+    "double-dawn",
+    "merciful-revision",
+    "last-delivery"
+  ],
+  "generationInput": [
+    "capabilities_available",
+    "final_actions_in_order",
+    "costs_already_paid",
+    "witness_pages",
+    "player_identity_state",
+    "blank_seal_state",
+    "party_member_ids",
+    "character_status_and_relationships",
+    "owned_items_and_provenance",
+    "regional_states",
+    "unresolved_promises",
+    "multiplayer_anchors_for_epilogue_only"
+  ],
+  "requiredOutput": {
+    "endingId": "deterministic id derived from the finale snapshot",
+    "anchorFamily": "closest quality anchor or emergent-hybrid",
+    "titleZh": "new or anchor title",
+    "titleEn": "new or anchor title",
+    "thesis": "one sentence describing what the player chose",
+    "capabilitiesUsed": ["capability id"],
+    "irreversibleCosts": ["saved fact id"],
+    "preserved": ["saved person, place, route, truth or relationship id"],
+    "lost": ["saved or unresolved id"],
+    "unresolved": ["future conflict id"],
+    "finaleScenes": "4 to 6 ordered scenes, each grounded in saved facts",
+    "characterEpilogues": "one entry for every stable main character and every current companion",
+    "regionalEpilogues": "at least three entries",
+    "finalImagePrompt": "one visual event, no UI or readable text",
+    "videoCandidate": "optional 5 second milestone prompt"
+  },
+  "validation": [
+    "uses_at_least_one_available_capability",
+    "uses_no_unavailable_capability",
+    "includes_every_mandatory_cost_of_used_capabilities",
+    "contains_one_preserved_core_and_one_irreversible_cost",
+    "references_every_current_companion",
+    "does_not_resurrect_confirmed_dead_or_erased_without_capability",
+    "does_not_change_item_ownership_without_a_final_action",
+    "does_not_invent_new_ledger_seal_ruler_or_reality_mechanism",
+    "multiplayer_anchors_only_enrich_regional_epilogues",
+    "same_finale_snapshot_returns_same_saved_ending"
+  ],
+  "fallback": "After two failed repairs, render the closest compatible anchor family using the same facts and costs."
+}

@@ -1,0 +1,45 @@
+{
+  "name": "the-erased-kingdom",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test:protocol": "TMPDIR=/private/tmp tsx _qa/protocol.ts",
+    "test:state-integrity": "TMPDIR=/private/tmp tsx _qa/state-integrity.ts",
+    "test:danger": "TMPDIR=/private/tmp tsx _qa/danger-director.ts",
+    "test:choice-recovery": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs choice-recovery",
+    "test:image-director": "TMPDIR=/private/tmp tsx _qa/image-director.ts",
+    "test:item-images": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs item-images",
+    "test:persistence": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs persistence",
+    "test:audio": "TMPDIR=/private/tmp tsx _qa/audio-director.ts && /Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs audio",
+    "test:restart": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs restart",
+    "test:status-drawer": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs status-drawer",
+    "test:i18n": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs i18n",
+    "test:avatar": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs avatar",
+    "test:finale-flow": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs finale-flow",
+    "test:responsive": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs responsive",
+    "test:ending": "TMPDIR=/private/tmp tsx _qa/ending-director.ts",
+    "test:oldwood": "TMPDIR=/private/tmp tsx _qa/oldwood-chapter.ts",
+    "test:campaign": "TMPDIR=/private/tmp tsx _qa/full-campaign.ts",
+    "test:decision-context": "TMPDIR=/private/tmp tsx _qa/decision-context.ts"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "less": "^4.2.0",
+    "tsx": "^4.23.5",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.21"
+  }
+}

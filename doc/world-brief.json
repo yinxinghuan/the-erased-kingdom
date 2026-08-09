@@ -1,0 +1,95 @@
+{
+  "$schema": "./world-brief.schema.json",
+  "game": {
+    "id": "the-erased-kingdom",
+    "titleZh": "被删去的王国",
+    "titleEn": "The Erased Kingdom",
+    "mode": "open-world",
+    "languages": ["zh", "en"]
+  },
+  "experience": {
+    "playerFantasy": "You are an unregistered border courier carrying the last blank royal seal, free to cross forests, market cities, border forts and erased roads while restoring people and places the kingdom has struck from reality.",
+    "emotionalPromise": "A clear high-fantasy adventure about finding evidence, protecting companions and deciding who has the right to define what is real, with wonder and danger rather than a lecture about bureaucracy.",
+    "commonKnowledgeBoundary": "The world uses familiar villages, roads, castles, markets, knights and wilderness. Players only need three opening rules: crossed-out places fade, living witnesses and useful objects can prove they existed, and the blank seal can restore one proven fact temporarily.",
+    "openingObjective": "Protect Mara, determine why Apple Vale vanished after your delivery, and use the blank seal to restore one safe landmark before nightfall."
+  },
+  "world": {
+    "fixedRules": [
+      "Only the Royal Ledger and the blank royal seal can change whether a registered person, place or route exists; ordinary writing has no magical effect.",
+      "Erasure removes public records and roads first, then weakens memory and physical presence. Erased people are displaced into the Margins rather than silently killed and can be restored before the Great Revision closes their entry.",
+      "A permanent restoration needs three compatible proofs: a living witness, a useful physical object with provenance, and a truthful account. The blank seal can make one supported fact real only until the current chapter closes.",
+      "Confirmed ownership, injuries, promises, companion membership, restored places and past choices persist across scenes and reloads.",
+      "The Great Revision advances through main-quest commitments, never through a fixed turn count or real-world timer.",
+      "Other players are fellow map-bearers. Their notes, aid and public works may help, but cannot overwrite a player's private quest, companions, inventory or ending choice."
+    ],
+    "generationRules": [
+      "AI may create local residents, rumors, small ruins, jobs, treasures, weather and conflicts inside registered regions, but may not invent a second Royal Ledger, a second blank seal, a new ruler or a replacement main antagonist.",
+      "Every turn must change at least one trackable fact: location, objective evidence, companion state, relationship, owned item, route, danger phase, stat or confirmed world condition.",
+      "Visible prose and the three returned choices must describe the same immediate decision; if concrete alternatives cannot be recovered, leave free action available instead of inventing a generic continue option.",
+      "Recurring characters use stable identities and know only what they witnessed, were told or can reasonably infer. New groups cannot replace the current party.",
+      "At the finale, AI may invent a unique ending title, emotional scene and epilogue by combining only ending capabilities and costs proven by saved facts. It may not invent a new reality mechanism, erase an unresolved companion, undo ownership or produce a cost-free perfect victory.",
+      "Failure causes injury, lost supplies, reduced Recognition, separation, a closed route, stronger pursuit or a changed local situation; it never deletes the save or rewrites a confirmed fact.",
+      "Use no more than four named world terms in player-facing onboarding: Royal Ledger, Great Revision, blank seal and the Margins. Explain all other rules in ordinary language through events."
+    ],
+    "maxActiveThreads": 3
+  },
+  "stats": [
+    { "id": "vitality", "labelZh": "体力", "labelEn": "Vitality", "min": 0, "max": 100, "initial": 82, "display": "bar", "dangerDirection": "low", "warningAt": 30, "dangerAt": 0, "maxDelta": 22 },
+    { "id": "supplies", "labelZh": "补给", "labelEn": "Supplies", "min": 0, "max": 12, "initial": 7, "display": "number", "dangerDirection": "low", "warningAt": 2, "dangerAt": 0, "maxDelta": 3 },
+    { "id": "recognition", "labelZh": "被记得", "labelEn": "Recognition", "min": 0, "max": 100, "initial": 48, "display": "bar", "dangerDirection": "low", "warningAt": 25, "dangerAt": 5, "maxDelta": 18 }
+  ],
+  "choiceIntents": [
+    "act directly through courage, force, travel or protection",
+    "inspect the map, object, record or environment for a rule or hidden route",
+    "persuade a witness, rely on a companion or spend the blank seal at a real cost"
+  ],
+  "signatureItem": {
+    "nameZh": "空白王印",
+    "nameEn": "Blank Royal Seal",
+    "ability": "Temporarily registers one observed and supported fact about a person, place or route, making it real until the current chapter closes.",
+    "limitOrCost": "It holds three witness-ink charges per chapter, cannot create an unknown fact, and each use raises the chance that royal hunters can trace the player.",
+    "provenance": "The dead king ordered it made for emergencies, but the royal courier carrying it was erased before delivery; it reaches the player inside the opening letter."
+  },
+  "danger": {
+    "minSafeTurns": 2,
+    "maxSafeTurns": 4,
+    "cooldownTurns": 2,
+    "physicalCombat": "allowed",
+    "methods": [
+      "stand ground, protect someone or fight through the immediate threat",
+      "read the terrain and registry rule to expose a safer route or weakness",
+      "negotiate, call on a companion or spend a scarce seal charge to change the situation"
+    ],
+    "threatPalette": [
+      "royal hunters follow the fresh signature of a blank-seal amendment",
+      "an erased road collapses into the colorless Margins while travellers are still crossing",
+      "a ledger beast formed from crossed-out names stalks a witness carrying proof",
+      "hungry deserters seize a public supply cache and demand recognition in exchange",
+      "two restored histories place different owners, families or armies in the same location",
+      "a companion begins fading after an official record denies their identity"
+    ],
+    "fallbackStatId": "vitality",
+    "fallbackAmount": 14
+  },
+  "visuals": {
+    "material": "wayfarer",
+    "artDirection": "cinematic grounded high fantasy under bureaucratic erasure, broad readable landscapes, lived-in medieval clothing, natural anatomy, ivory absence eating into saturated places, cobalt action accents, vermilion deletion marks and restrained brass light",
+    "entryScene": "a border courier and a young cartographer at the edge of a warm orchard village that is visibly fading from the road behind them, half of the village still colorful and inhabited, half turning into silent ivory absence, one clear emotional focus, no frame and no readable text",
+    "sceneImageDirection": "cinematic high-fantasy adventure, one decisive event per frame, grounded people and tactile places, 4:5 portrait master with faces, action and essential props in the central safe column, erasure appears as spatial loss rather than paper collage, no UI and no readable text",
+    "itemImageDirection": "museum-quality fantasy artifact study on dark cloth and pale registry paper, object only, consistent brass and vermilion details, square composition, no people and no readable text"
+  },
+  "audio": {
+    "mood": "measured travel pulse, dry page and seal percussion, warm low strings for restored places, restrained horn warnings and quiet wind where the world has been erased",
+    "bpm": 58
+  },
+  "ending": {
+    "type": "true-ending",
+    "failureConsequences": [
+      "an injury and forced retreat to the latest named landmark",
+      "lost supplies or a consumed witness-ink charge",
+      "reduced Recognition that closes official routes and makes some people fail to recognize the player",
+      "a companion temporarily separated or placed under royal custody",
+      "a route erased or a local conflict made harder but still solvable by another method"
+    ]
+  }
+}
