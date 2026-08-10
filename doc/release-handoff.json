@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "projectId": "the-erased-kingdom",
   "uuid": "0a86a3a1-9328-406a-955f-8a2a8d7e704c",
-  "sourceCommit": null,
+  "sourceCommit": "4119d08",
   "buildCommand": "npm run build",
   "distPath": "dist",
   "posterPath": "public/poster.png",
@@ -35,7 +35,8 @@
     "endingAnchors": 8,
     "browserTargetSizes": ["320x568", "390x844", "1024x768", "1440x900"],
     "uiFlow": "entry -> decision -> result -> next -> decision -> finale -> ending",
-    "productionMediaStillRequiresLiveSampling": true
+    "productionMediaStillRequiresLiveSampling": true,
+    "avatarIdentityContract": "image_subject owns the avatar reference; only player-dominant action shots receive ref_url; companions, NPCs and animals are explicitly excluded"
   },
   "deployment": {
     "performed": true,
