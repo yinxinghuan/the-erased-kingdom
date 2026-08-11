@@ -21,6 +21,12 @@
 - 同一人物 · 桥上战斗场景：https://cdn.aiwaves.tech/prod/telegram/avatar/0/1786302916771999.webp
 - 两张场景都使用同一 `ref_url` 串行生成；人工检查确认短卷发、绿眼、右脸伤痕和脸型连续，且没有中文或其他可读文字。测试人物为制作期虚构身份，不是用户资料。
 
+## 2026-08-11 运行时图片服务迁移
+
+- 场景图与物品图默认通过 `https://game.aiwaves.tech/alteru-media/api/v1/images/generations` 生成；媒体服务统一适配底层提供商。
+- 玩家头像仍先裁成 `512×640` 公网参考图，仅在 `image_subject=player` 时作为头像编辑输入；玛拉与其他 NPC 不继承玩家面部。
+- 旧 Aigram transit 保留为 `?media_backend=legacy` 的紧急回滚路径；正式海报的既有制作来源记录不变。
+
 ## Runtime cover prompt
 
 ```text

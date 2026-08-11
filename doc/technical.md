@@ -4,7 +4,7 @@
 
 - React 18 + TypeScript 5 + Less + Vite 5。
 - 叙事以结构化 `StorySave` 驱动，AI 只生成被协议允许的叙事与命令；数值、背包、伙伴、危险、事实与结局验证均由本地引擎执行。
-- 运行时 AI 接入 Aigram `game-chat`；每回合场景图使用平台 `gen-image`，关键里程碑可使用 `gen-video`。
+- 运行时 AI 接入 Aigram `game-chat`；每回合场景图默认使用独立 AlterU Media Service，关键里程碑仍使用既有 `gen-video`。紧急回滚可在游戏 URL 添加 `?media_backend=legacy`，让图片改回 Aigram transit。
 - 玩家身份通过 AlterU 用户资料接口取得；Civic 模式会把玩家头像一次性裁为 `512×640` 并上传缓存，玩家明确出镜的每个镜头都复用同一个 `ref_url`。
 - 持久化使用 `useGameSave`，命名空间为 `the-erased-kingdom`；平台外调试同时有本地旧存档兼容读取。
 
@@ -28,10 +28,13 @@ src/story/
     worldContext.ts              # 事实快照与八章主线导演合同
   adapters/                      # demo / Aigram / remote 三种叙事来源
   useAvatarImageReference.ts     # 头像裁切、上传与一次性缓存
-  audio/
-    StorySynth.ts                # 八类地区声景、叙事动机、总线与 Web Audio 合成
-    cueDirector.ts               # 每回合选择一个最高语义音效，避免反馈堆叠
-    useStoryAudio.ts             # 手势解锁、静音与故事状态映射
+src/shared/runtime/
+  media.ts                       # 独立媒体服务客户端、尺寸适配与任务轮询
+  useGenImage.ts                 # 新服务默认路由与旧 transit 回滚开关
+src/story/audio/
+  StorySynth.ts                  # 八类地区声景、叙事动机、总线与 Web Audio 合成
+  cueDirector.ts                 # 每回合选择一个最高语义音效，避免反馈堆叠
+  useStoryAudio.ts               # 手势解锁、静音与故事状态映射
 doc/
   requirements.md               # 完整玩法需求
   visual.md                     # Civic 视觉与信息状态流
@@ -66,6 +69,8 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 
 `imageDirector.ts` 以 `SCENE_IMAGE_PROMPT_VERSION=8` 重建待生成场景提示。`image_subject` 是明确的头像归属合同：`player` 仅用于玩家执行主要可见动作的镜头，`others / environment` 会覆盖关键词推断，避免玩家只是陪衬时仍把头像错误贴到玛拉或其他人物。只有标签缺失时，本地导演才用 `playerImageAliases` 推断。`useStoryEngine.ts` 随后为玩家主导镜头传入同一张裁切头像，并追加 PERSON A 身份演员表、稳定服装锚点、NPC 排除名单和禁止人脸/动物混合约束。
 
+`src/shared/runtime/media.ts` 以永久游戏 UUID 作为 `session_id`，统一处理图片尺寸网格、任务轮询、超时、结构化错误和 request UUID。网络结果不明确时保留同一 request UUID 供重试恢复，收到结构化失败后才生成新请求，避免重复生成与重复计费。视频暂不迁移：当前里程碑仍按旧接口 `4:3` 调用，而独立媒体服务的实验视频合同只接受 `9:16`，必须先制作专用竖屏首尾帧。
+
 渲染提示不再拼接中文故事正文；含 CJK 的 AI 图片提议会被拒绝并由本地英文导演提示兜底。最终提示还要求路牌、书、地图、信件、标签、印章和纸面全部留白或只含非语言抽象标记，禁止汉字、拉丁字母、数字与伪文字。版本迁移只重建仍处于 queued / generating / failed 的旧提示，已经生成的历史图片不自动消耗额度重画。
 
 ### 屏幕适配
@@ -99,6 +104,7 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 - 改 Civic 布局与视觉：编辑 `StoryShell.tsx`、`story.less` 与 `doc/visual.md`；Living 分支仍保留，不能直接删除。
 - 替换入口画面：替换 `src/story/img/worlds/the-erased-kingdom*.webp`，保持入口 4:5、无 UI、无可读文字。
 - 改玩家出镜别名或生图身份规则：编辑 cartridge 的 `playerImageAliases`、`engine/imageDirector.ts` 与 `useStoryEngine.ts`；新增玩家职业称谓时必须同步回归测试。
+- 改媒体服务合同：编辑 `src/shared/runtime/media.ts`；临时回滚旧图片链路：在 URL 增加 `media_backend=legacy`。图片内容、头像归属与媒体传输层保持分离。
 - 接入异步多人：把权威世界查询结果转换为可选页边批注、公共物资与工程实体；不得直接写私人数值、背包、伙伴或终局能力。没有远端服务时保持单人模式。
 
 ## 发布适配

@@ -35,6 +35,21 @@ const imageRequests = []
 await page.route('https://images.aiwaves.tech/alteru/guest-shell.js', (route) => route.fulfill({ contentType: 'application/javascript', body: '' }))
 await page.route(avatarUrl, (route) => route.fulfill({ contentType: 'image/gif', body: Buffer.from(transparentGif, 'base64') }))
 await page.route('https://chat.aiwaves.tech/aigram/api/upload', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ url: preparedAvatarUrl, pathname: 'qa/avatar.jpg', contentType: 'image/jpeg' }) }))
+await page.route('https://game.aiwaves.tech/alteru-media/api/v1/images/generations', (route) => {
+  const payload = route.request().postDataJSON()
+  imageRequests.push({ ...payload, ref_url: payload.reference_urls?.[0] })
+  if (testCase === 'opening-coherence') return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+  const now = Date.now()
+  return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+    request_id: payload.request_id,
+    task_id: `qa-image-${imageRequests.length}`,
+    type: 'image',
+    status: 'succeeded',
+    media: { type: 'image', url: `data:image/gif;base64,${transparentGif}`, width: payload.size.width, height: payload.size.height, format: 'png' },
+    created_at: now,
+    updated_at: now,
+  }) })
+})
 await page.route('https://chat.aiwaves.tech/aigram/api/gen-image', (route) => {
   imageRequests.push(route.request().postDataJSON())
   if (testCase === 'opening-coherence') return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
@@ -155,7 +170,7 @@ if (testCase === 'persistence') {
   const protagonistRequests = imageRequests.filter((request) => request.ref_url)
   if (protagonistRequests.length < 3) throw new Error(`consecutive protagonist scenes lost the avatar reference: ${JSON.stringify(imageRequests)}`)
   if (protagonistRequests.some((request) => request.ref_url !== preparedAvatarUrl)) throw new Error(`player reference changed between scenes: ${JSON.stringify(protagonistRequests)}`)
-  if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD IDENTITY CONSTRAINT'))) throw new Error('a player scene omitted the hard identity contract')
+  if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD IDENTITY CAST MAP'))) throw new Error(`a player scene omitted the hard identity cast map: ${JSON.stringify(protagonistRequests)}`)
   if (protagonistRequests.some((request) => /[\u3400-\u9fff]/.test(String(request.prompt)))) throw new Error('a renderer prompt leaked Chinese characters')
 } else if (testCase === 'finale-flow') {
   const route = [
