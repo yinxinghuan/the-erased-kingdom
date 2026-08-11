@@ -58,6 +58,8 @@ _qa/
 
 `useStoryEngine.ts` 持有 `StorySave v7`。每次行动先产生本地即时反馈，再由 adapter 返回叙事协议；`reducer.ts` 统一写入地点、时间、目标、数值、物品、伙伴、关系、事实、危险和媒体块。AI 不直接拥有或修改存档。
 
+浏览器侧持久化通过 `public/alteru-storage-scope.js` 在游戏模块加载前安装的 `alteruLocalStorage` / `alteruSessionStorage` 访问，真实 key 统一加上 `alteru:<当前部署 UUID>:` 前缀。自托管、GitHub Pages 和 Remix 因而不会在共享 origin 上串用剧情存档、语言、字号或音频偏好；旧的未加前缀 key 只由明确的兼容读取路径处理。
+
 第 0 场图片带 `promptVersion`、`source=opening` 与 `playerVisible=true`。仍停在第 0 场的旧存档若保存了早期“拉住玛拉”入口图，会在归一化时清除旧 URL、换入当前选择前 prompt 并重新排队；已经推进到后续场景的存档不重写历史画面。
 
 Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再停在苹果谷或古林切片；钟市、红堡、灯塔海岸、归名之夜、页边、第二次失去苹果谷、白石王都、总册高塔与大修订均有可回归路径。Aigram 模式使用 `StoryDirector.chapters` 与 `storyDirectorContract()` 驱动 80–120 个有效决策的长篇版本：模型收到每章解锁、情绪目的、必经节拍和完成事实，可扩写而不能跳章或重启主线。

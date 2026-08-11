@@ -54,10 +54,13 @@ const page = await context.newPage()
 const imageRequests = []
 await page.route('https://images.aiwaves.tech/alteru/guest-shell.js', (route) => route.fulfill({ contentType: 'application/javascript', body: '' }))
 await page.route(avatarUrl, (route) => route.fulfill({ contentType: 'image/gif', body: Buffer.from(transparentGif, 'base64') }))
-await page.route('https://game.aiwaves.tech/alteru-media/api/v1/images/generations', (route) => {
+await page.route('https://game.aiwaves.tech/alteru-media/api/v1/images/generations', async (route) => {
   const payload = route.request().postDataJSON()
   imageRequests.push({ ...payload, ref_url: payload.reference_urls?.[0] })
   if (testCase === 'opening-coherence') return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
+  if (testCase === 'item-images' && String(payload.prompt || '').includes('inventory artifact plate')) {
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
   const now = Date.now()
   return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
     request_id: payload.request_id,
@@ -81,7 +84,7 @@ async function fresh(lang = 'zh', avatar = false) {
   const query = new URLSearchParams({ story_mode: 'demo', lang })
   if (avatar) { query.set('avatar_url', avatarUrl); query.set('user_name', 'Alexandria Fieldnotes') }
   await page.goto(`${baseUrl}?${query}`, { waitUntil: 'networkidle' })
-  await page.evaluate(() => localStorage.clear())
+  await page.evaluate(() => window.alteruLocalStorage.clear())
   await page.reload({ waitUntil: 'networkidle' })
 }
 
@@ -99,7 +102,7 @@ async function chooseFirst() {
 
 if (testCase === 'persistence') {
   await fresh(); await enter(); await chooseFirst()
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}').worlds?.['the-erased-kingdom'])
+  const saved = await page.evaluate(() => JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}').worlds?.['the-erased-kingdom'])
   if (!saved || saved.scene !== 1 || saved.choices.length !== 3) throw new Error(`turn was not persisted: ${JSON.stringify(saved)}`)
   await page.reload({ waitUntil: 'networkidle' })
   await page.getByRole('dialog').waitFor()
@@ -108,8 +111,8 @@ if (testCase === 'persistence') {
 } else if (testCase === 'choice-recovery') {
   await fresh(); await enter(); await chooseFirst()
   await page.evaluate(() => {
-    const key = 'the-erased-kingdom-save'; const archive = JSON.parse(localStorage.getItem(key) || '{}')
-    archive.worlds['the-erased-kingdom'].choices = []; localStorage.setItem(key, JSON.stringify(archive))
+    const key = 'the-erased-kingdom-save'; const archive = JSON.parse(window.alteruLocalStorage.getItem(key) || '{}')
+    archive.worlds['the-erased-kingdom'].choices = []; window.alteruLocalStorage.setItem(key, JSON.stringify(archive))
   })
   await page.reload({ waitUntil: 'networkidle' }); await page.getByRole('button', { name: '继续游戏' }).click()
   const choices = await page.locator('.st-quick-replies button').allTextContents()
@@ -119,7 +122,7 @@ if (testCase === 'persistence') {
   await page.getByRole('button', { name: '世界' }).click(); await page.getByRole('button', { name: '信使包' }).click()
   await page.locator('.st-inventory-reveal').waitFor({ state: 'visible' })
   await page.waitForFunction(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     return archive.worlds?.['the-erased-kingdom']?.inventory?.some((item) => item.imageStatus === 'ready')
   }, null, { timeout: 9000 })
   const itemPrompt = imageRequests.map((request) => String(request.prompt || '')).find((prompt) => prompt.includes('inventory artifact plate'))
@@ -135,7 +138,7 @@ if (testCase === 'persistence') {
   mkdirSync('_qa/ui', { recursive: true })
   await fresh(); await page.addStyleTag({ content: '#alteru-guest-banner{display:none!important}' }); await enter()
   const opening = await page.evaluate(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     return archive.worlds?.['the-erased-kingdom']?.blocks?.find((block) => block.id === 'image-0')
   })
   if (opening?.data?.playerVisible !== 'true' || !String(opening?.data?.prompt).includes('BEFORE the player chooses')) throw new Error(`opening image contract missing: ${JSON.stringify(opening)}`)
@@ -149,7 +152,7 @@ if (testCase === 'persistence') {
   await fresh(); await enter(); await chooseFirst(); await page.reload({ waitUntil: 'networkidle' })
   await page.getByRole('button', { name: '重新开始' }).click(); await page.getByRole('button', { name: '确认从头开始' }).click()
   await page.getByRole('button', { name: '走进正在消失的苹果谷' }).waitFor()
-  const reset = await page.evaluate(() => JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}').worlds?.['the-erased-kingdom'])
+  const reset = await page.evaluate(() => JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}').worlds?.['the-erased-kingdom'])
   if (reset.scene !== 0 || reset.entered !== false) throw new Error('restart did not isolate and reset this world')
 } else if (testCase === 'status-drawer') {
   await fresh(); await enter()
@@ -173,7 +176,7 @@ if (testCase === 'persistence') {
   if (displayedAvatar !== avatarUrl) throw new Error(`player record did not use the supplied avatar: ${displayedAvatar}; url=${page.url()}`)
   await page.getByRole('button', { name: '关闭', exact: true }).click(); await chooseFirst()
   await page.waitForFunction(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     return archive.worlds?.['the-erased-kingdom']?.blocks?.some((block) => block.kind === 'image' && block.id !== 'image-0' && block.data?.status === 'ready')
   }, null, { timeout: 9000 })
   const openingCharacterRequest = imageRequests.find((request) => request.ref_url && String(request.prompt).includes('BEFORE the player chooses'))
@@ -183,7 +186,7 @@ if (testCase === 'persistence') {
   await page.locator('.ct-turn-next').click()
   await page.getByRole('button', { name: '写回桥梁，保住离村道路' }).click()
   await page.waitForFunction(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     return archive.worlds?.['the-erased-kingdom']?.blocks?.find((block) => block.id === 'image-2')?.data?.status === 'ready'
   }, null, { timeout: 12000 })
   const protagonistRequests = imageRequests.filter((request) => request.ref_url)
@@ -194,7 +197,7 @@ if (testCase === 'persistence') {
   if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD IDENTITY CAST MAP'))) throw new Error(`a player scene omitted the hard identity cast map: ${JSON.stringify(protagonistRequests)}`)
   if (protagonistRequests.some((request) => /[\u3400-\u9fff]/.test(String(request.prompt)))) throw new Error('a renderer prompt leaked Chinese characters')
   const identityVersions = await page.evaluate(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     return archive.worlds?.['the-erased-kingdom']?.blocks
       ?.filter((block) => block.kind === 'image' && block.data?.playerVisible === 'true')
       ?.map((block) => block.data?.identityRefVersion)
@@ -203,7 +206,7 @@ if (testCase === 'persistence') {
 } else if (testCase === 'avatar-late-profile') {
   await fresh(); await enter()
   await page.waitForFunction(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     return archive.worlds?.['the-erased-kingdom']?.blocks?.find((block) => block.id === 'image-0')?.data?.status === 'ready'
   }, null, { timeout: 12000 })
   const openingRequest = imageRequests.find((request) => String(request.prompt).includes('BEFORE the player chooses'))
@@ -217,24 +220,24 @@ if (testCase === 'persistence') {
 } else if (testCase === 'avatar-saved-opening-repair') {
   await fresh('zh', true); await enter(); await chooseFirst()
   await page.waitForFunction(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     return archive.worlds?.['the-erased-kingdom']?.blocks?.find((block) => block.id === 'image-1')?.data?.status === 'ready'
   }, null, { timeout: 12000 })
   await page.evaluate(() => {
     const key = 'the-erased-kingdom-save'
-    const archive = JSON.parse(localStorage.getItem(key) || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem(key) || '{}')
     archive.worlds['the-erased-kingdom'].blocks = archive.worlds['the-erased-kingdom'].blocks.map((block) => {
       if (block.id !== 'image-0' && block.id !== 'image-1') return block
       const data = { ...block.data, status: 'ready', url: `https://qa.invalid/legacy-${block.id}.png`, playerVisible: 'true' }
       delete data.identityRefVersion
       return { ...block, data }
     })
-    localStorage.setItem(key, JSON.stringify(archive))
+    window.alteruLocalStorage.setItem(key, JSON.stringify(archive))
   })
   const beforeRepair = imageRequests.length
   await page.reload({ waitUntil: 'networkidle' })
   await page.waitForFunction(() => {
-    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     const early = archive.worlds?.['the-erased-kingdom']?.blocks?.filter((block) => block.id === 'image-0' || block.id === 'image-1') ?? []
     return early.length === 2 && early.every((block) => block.data?.status === 'ready' && block.data?.identityRefVersion === 1)
   }, null, { timeout: 15000 })
@@ -270,7 +273,7 @@ if (testCase === 'persistence') {
     await page.locator('.ct-turn-next').click()
   }
   await page.locator('.st-ending-gate').waitFor({ state: 'visible', timeout: 10000 })
-  const save = await page.evaluate(() => JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}').worlds?.['the-erased-kingdom'])
+  const save = await page.evaluate(() => JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}').worlds?.['the-erased-kingdom'])
   if (save.scene !== 31 || save.facts['witness-pages'] !== 6 || save.partyMemberIds.length !== 3) throw new Error(`full browser campaign state mismatch: ${JSON.stringify({ scene: save.scene, facts: save.facts, party: save.partyMemberIds })}`)
   if (save.blocks.filter((block) => block.kind === 'image').length !== 32) throw new Error('every campaign step did not receive exactly one image block')
   await page.screenshot({ path: '_qa/ui/cinematic-civic-finale-gate-platform-layout-390x844.png' })

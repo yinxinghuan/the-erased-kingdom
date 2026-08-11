@@ -45,7 +45,7 @@ function isArchive(candidate: PersistedStoryData | null | undefined): candidate 
 
 function readLegacyLocal(cartridgeId: string): LegacyStorySave | null {
   try {
-    const raw = localStorage.getItem(`stateful-story-${cartridgeId}-save`)
+    const raw = alteruLocalStorage.getItem(`stateful-story-${cartridgeId}-save`)
     return raw ? JSON.parse(raw) as LegacyStorySave : null
   } catch { return null }
 }
