@@ -5,7 +5,7 @@
 - React 18 + TypeScript 5 + Less + Vite 5。
 - 叙事以结构化 `StorySave` 驱动，AI 只生成被协议允许的叙事与命令；数值、背包、伙伴、危险、事实与结局验证均由本地引擎执行。
 - 运行时 AI 接入 Aigram `game-chat`；每回合场景图默认使用独立 AlterU Media Service，关键里程碑仍使用既有 `gen-video`。紧急回滚可在游戏 URL 添加 `?media_backend=legacy`，让图片改回 Aigram transit。
-- 玩家身份通过 AlterU 用户资料接口取得；Civic 模式会把玩家头像一次性裁为 `512×640` 并上传缓存，玩家明确出镜的每个镜头都复用同一个 `ref_url`。
+- 玩家身份通过 AlterU 用户资料接口取得；运行时保留原始公网 `head_url` 的像素与 1:1 比例，玩家明确出镜的每个镜头都把同一个原图 URL 作为身份参考。`512×640` 只定义最终场景画布，不再先把头像裁成场景比例。
 - 持久化使用 `useGameSave`，命名空间为 `the-erased-kingdom`；平台外调试同时有本地旧存档兼容读取。
 
 ## 2. 目录结构
@@ -27,7 +27,8 @@ src/story/
     endingAdapter.ts             # 调用 AI 生成结构化独特结局并修复非法结果
     worldContext.ts              # 事实快照与八章主线导演合同
   adapters/                      # demo / Aigram / remote 三种叙事来源
-  useAvatarImageReference.ts     # 头像裁切、上传与一次性缓存
+  usePlayerProfile.ts            # 延迟宿主身份同步与真实头像读取
+  useAvatarImageReference.ts     # 原始公网头像 URL 校验与直传
 src/shared/runtime/
   media.ts                       # 独立媒体服务客户端、尺寸适配与任务轮询
   useGenImage.ts                 # 新服务默认路由与旧 transit 回滚开关
@@ -67,9 +68,11 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 
 ### 场景生图与人物身份
 
-`imageDirector.ts` 以 `SCENE_IMAGE_PROMPT_VERSION=8` 重建待生成场景提示。`image_subject` 是明确的头像归属合同：`player` 仅用于玩家执行主要可见动作的镜头，`others / environment` 会覆盖关键词推断，避免玩家只是陪衬时仍把头像错误贴到玛拉或其他人物。只有标签缺失时，本地导演才用 `playerImageAliases` 推断。`useStoryEngine.ts` 随后为玩家主导镜头传入同一张裁切头像，并追加 PERSON A 身份演员表、稳定服装锚点、NPC 排除名单和禁止人脸/动物混合约束。
+`imageDirector.ts` 以 `SCENE_IMAGE_PROMPT_VERSION=8` 重建待生成场景提示。`image_subject` 是明确的头像归属合同：`player` 仅用于玩家执行主要可见动作的镜头，`others / environment` 会覆盖关键词推断，避免玩家只是陪衬时仍把头像错误贴到玛拉或其他人物。只有标签缺失时，本地导演才用 `playerImageAliases` 推断。`useStoryEngine.ts` 随后为玩家主导镜头直传同一张原始头像，以普通 image edit 模式独立生成 `512×640` 场景，并追加 PERSON A 身份演员表、NPC 排除名单和禁止人脸/动物混合约束。`imageIdentity.ts` 把场景与身份合同限制在媒体服务的 `4000` 字符上限内，防止身份镜头因超长提示失败。
 
-`src/shared/runtime/media.ts` 以永久游戏 UUID 作为 `session_id`，统一处理图片尺寸网格、任务轮询、超时、结构化错误和 request UUID。网络结果不明确时保留同一 request UUID 供重试恢复，收到结构化失败后才生成新请求，避免重复生成与重复计费。视频暂不迁移：当前里程碑仍按旧接口 `4:3` 调用，而独立媒体服务的实验视频合同只接受 `9:16`，必须先制作专用竖屏首尾帧。
+`usePlayerProfile.ts` 不再把首帧读取时的 shell 状态当成永久结论：它为宿主 bridge 留出 `2.5s` 启动窗口，并在初始十秒、宿主消息、页面重新聚焦和恢复可见时按实时 `isInAigramNow()` / `getTelegramId()` 重新解析身份。这样平台晚于 iframe 注入玩家资料时，开场生图仍会等待真实头像，而不会提前锁定默认角色。
+
+`src/shared/runtime/media.ts` 以永久游戏 UUID 作为 `session_id`，统一处理图片尺寸网格、任务轮询、超时、结构化错误和 request UUID。网络结果不明确时保留同一 request UUID 供重试恢复，收到结构化失败后才生成新请求，避免重复生成与重复计费。场景重试读取服务返回的 `retryable` 与 `retry_after_seconds`：永久错误立即停止，限流错误等待服务指定窗口，禁止按固定 3/8 秒连续撞限流。视频暂不迁移：当前里程碑仍按旧接口 `4:3` 调用，而独立媒体服务的实验视频合同只接受 `9:16`，必须先制作专用竖屏首尾帧。
 
 渲染提示不再拼接中文故事正文；含 CJK 的 AI 图片提议会被拒绝并由本地英文导演提示兜底。最终提示还要求路牌、书、地图、信件、标签、印章和纸面全部留白或只含非语言抽象标记，禁止汉字、拉丁字母、数字与伪文字。版本迁移只重建仍处于 queued / generating / failed 的旧提示，已经生成的历史图片不自动消耗额度重画。
 

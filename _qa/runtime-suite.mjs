@@ -4,7 +4,6 @@ import { mkdirSync } from 'node:fs'
 const testCase = process.argv[2] || 'persistence'
 const baseUrl = process.env.STORY_QA_URL || 'http://127.0.0.1:4184/'
 const avatarUrl = 'https://qa.invalid/player-avatar.jpg'
-const preparedAvatarUrl = 'https://qa.invalid/prepared-avatar-640x800.jpg'
 const transparentGif = 'R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
 
 const browser = await chromium.launch({ headless: true })
@@ -29,12 +28,32 @@ await context.addInitScript(() => {
   Object.defineProperty(window, 'AudioContext', { configurable: true, value: TrackedAudioContext })
   Object.defineProperty(window, 'webkitAudioContext', { configurable: true, value: TrackedAudioContext })
 })
+if (testCase === 'avatar-late-profile') {
+  await context.addInitScript(({ avatarUrl }) => {
+    window.addEventListener('message', (event) => {
+      if (typeof event.data !== 'string' || !event.data.startsWith('callAPI-')) return
+      try {
+        const request = JSON.parse(decodeURIComponent(escape(atob(event.data.slice(8)))))
+        if (!String(request.url).includes('/note/telegram/user/get/info/by/telegram_id')) return
+        const callback = window[`__aigram_cb_${String(request.request_id).replace(/-/g, '_')}`]
+        callback?.(JSON.stringify({
+          request_id: request.request_id,
+          success: true,
+          data: { retcode: 0, msg: 'ok', data: { name: 'Late Bridge Player', head_url: avatarUrl } },
+        }))
+      } catch { /* the production bridge timeout will surface a regression */ }
+    })
+    window.setTimeout(() => {
+      window.Aigram = { isInAigram: true, telegramId: 'late-player-42' }
+      window.postMessage('qa-shell-identity-ready', '*')
+    }, 700)
+  }, { avatarUrl })
+}
 
 const page = await context.newPage()
 const imageRequests = []
 await page.route('https://images.aiwaves.tech/alteru/guest-shell.js', (route) => route.fulfill({ contentType: 'application/javascript', body: '' }))
 await page.route(avatarUrl, (route) => route.fulfill({ contentType: 'image/gif', body: Buffer.from(transparentGif, 'base64') }))
-await page.route('https://chat.aiwaves.tech/aigram/api/upload', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ url: preparedAvatarUrl, pathname: 'qa/avatar.jpg', contentType: 'image/jpeg' }) }))
 await page.route('https://game.aiwaves.tech/alteru-media/api/v1/images/generations', (route) => {
   const payload = route.request().postDataJSON()
   imageRequests.push({ ...payload, ref_url: payload.reference_urls?.[0] })
@@ -158,7 +177,7 @@ if (testCase === 'persistence') {
     return archive.worlds?.['the-erased-kingdom']?.blocks?.some((block) => block.kind === 'image' && block.id !== 'image-0' && block.data?.status === 'ready')
   }, null, { timeout: 9000 })
   const openingCharacterRequest = imageRequests.find((request) => request.ref_url && String(request.prompt).includes('BEFORE the player chooses'))
-  if (!openingCharacterRequest || openingCharacterRequest.ref_url !== preparedAvatarUrl) throw new Error(`prepared avatar reference was not used for the opening player: ${JSON.stringify(imageRequests)}`)
+  if (!openingCharacterRequest || openingCharacterRequest.ref_url !== avatarUrl) throw new Error(`original avatar reference was not used for the opening player: ${JSON.stringify(imageRequests)}`)
   const actionCharacterRequest = imageRequests.find((request) => request.ref_url && String(request.prompt).includes('same person performing the dominant player action'))
   if (!actionCharacterRequest) throw new Error('identity action contract missing from the first chosen action prompt')
   await page.locator('.ct-turn-next').click()
@@ -169,9 +188,25 @@ if (testCase === 'persistence') {
   }, null, { timeout: 12000 })
   const protagonistRequests = imageRequests.filter((request) => request.ref_url)
   if (protagonistRequests.length < 3) throw new Error(`consecutive protagonist scenes lost the avatar reference: ${JSON.stringify(imageRequests)}`)
-  if (protagonistRequests.some((request) => request.ref_url !== preparedAvatarUrl)) throw new Error(`player reference changed between scenes: ${JSON.stringify(protagonistRequests)}`)
+  if (protagonistRequests.some((request) => request.ref_url !== avatarUrl)) throw new Error(`player reference changed between scenes: ${JSON.stringify(protagonistRequests)}`)
+  if (protagonistRequests.some((request) => request.mode !== 'edit')) throw new Error(`player scene did not use the identity-detail edit endpoint: ${JSON.stringify(protagonistRequests)}`)
+  if (protagonistRequests.some((request) => String(request.prompt).length > 4000)) throw new Error(`player prompt exceeded the Media Service contract: ${JSON.stringify(protagonistRequests.map((request) => String(request.prompt).length))}`)
   if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD IDENTITY CAST MAP'))) throw new Error(`a player scene omitted the hard identity cast map: ${JSON.stringify(protagonistRequests)}`)
   if (protagonistRequests.some((request) => /[\u3400-\u9fff]/.test(String(request.prompt)))) throw new Error('a renderer prompt leaked Chinese characters')
+} else if (testCase === 'avatar-late-profile') {
+  await fresh(); await enter()
+  await page.waitForFunction(() => {
+    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    return archive.worlds?.['the-erased-kingdom']?.blocks?.find((block) => block.id === 'image-0')?.data?.status === 'ready'
+  }, null, { timeout: 12000 })
+  const openingRequest = imageRequests.find((request) => String(request.prompt).includes('BEFORE the player chooses'))
+  if (openingRequest?.ref_url !== avatarUrl || openingRequest?.mode !== 'edit') {
+    throw new Error(`opening image started before the late player identity was ready: ${JSON.stringify(imageRequests)}`)
+  }
+  await page.getByRole('button', { name: '世界' }).click()
+  const latePlayer = page.locator('.st-roster__player')
+  await latePlayer.getByText('Late Bridge Player', { exact: true }).waitFor()
+  if (await latePlayer.locator('img').getAttribute('src') !== avatarUrl) throw new Error('late shell avatar was not reflected in the player record')
 } else if (testCase === 'finale-flow') {
   const route = [
     '拉住正在褪色的玛拉', '写回面包房，保住补给和村民', '检查它是否只追逐文字', '让奥伦亲自检查量尺',

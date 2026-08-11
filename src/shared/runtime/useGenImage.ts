@@ -9,26 +9,30 @@ export interface GenImageRequest {
   ref_url?: string
   requestedSize?: { width: number; height: number }
   profile?: 'fast-small' | 'standard'
+  referenceMode?: 'edit' | 'avatar'
 }
 
 export function useGenImage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const pendingRequestIds = useRef(new Map<string, string>())
-  const generate = useCallback(async ({ prompt, ref_url, requestedSize, profile }: GenImageRequest) => {
+  const generate = useCallback(async ({ prompt, ref_url, requestedSize, profile, referenceMode = 'edit' }: GenImageRequest) => {
     setLoading(true); setError(null)
     try {
       const sessionId = getGameUuid()
       const useLegacy = new URLSearchParams(window.location.search).get('media_backend') === 'legacy'
       if (sessionId && !useLegacy && requestedSize) {
-        const requestKey = JSON.stringify({ prompt, ref_url, requestedSize, profile })
+        const requestKey = JSON.stringify({ prompt, ref_url, requestedSize, profile, referenceMode })
         const requestId = pendingRequestIds.current.get(requestKey) ?? createMediaRequestId()
         pendingRequestIds.current.set(requestKey, requestId)
         try {
           const task = await generateImageMedia({
             sessionId,
             requestId,
-            mode: ref_url ? 'avatar' : 'text',
+            // Cinematic scene references favor the ordinary edit endpoint:
+            // production A/B showed sharper identity detail than the faster
+            // avatar-output endpoint. `size` independently owns the canvas.
+            mode: ref_url ? referenceMode : 'text',
             prompt,
             referenceUrls: ref_url ? [ref_url] : [],
             size: requestedSize,

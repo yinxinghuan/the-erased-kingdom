@@ -24,8 +24,16 @@
 ## 2026-08-11 运行时图片服务迁移
 
 - 场景图与物品图默认通过 `https://game.aiwaves.tech/alteru-media/api/v1/images/generations` 生成；媒体服务统一适配底层提供商。
-- 玩家头像仍先裁成 `512×640` 公网参考图，仅在 `image_subject=player` 时作为头像编辑输入；玛拉与其他 NPC 不继承玩家面部。
+- 玩家头像直接使用平台原始公网 `head_url`，不再裁成 `512×640`；最终 4:5 尺寸由媒体服务独立控制。仅在 `image_subject=player` 时作为普通 image edit 的身份输入；玛拉与其他 NPC 不继承玩家面部。
 - 旧 Aigram transit 保留为 `?media_backend=legacy` 的紧急回滚路径；正式海报的既有制作来源记录不变。
+
+### 1:1 原始头像直引对照
+
+- QA 头像由本次实验独立生成，是全新虚构身份，不来自游戏素材库、平台用户或真人资料；本地源文件为 `_qa/fixtures/generated-avatar-1x1.png`（1254×1254）。
+- 原始头像上传 URL：https://images.aiwaves.tech/uploads/1786447871025-1a0f39ywtdl.png
+- 普通 image edit，512×640：https://cdn.aiwaves.tech/prod/telegram/avatar/2401406586/1786447934781548.png（约 7.9 秒）
+- avatar output，512×640：https://cdn.aiwaves.tech/prod/telegram/avatar/2401406586/1786447938207417.webp（约 3.3 秒）
+- 两者均能在不预裁头像的情况下输出 4:5 场景；人工检查普通 edit 对动作执行、脸部细节和参考特征的综合保持更稳，因此剧情场景默认采用 edit。avatar 模式保留给头像类产物。
 
 ## Runtime cover prompt
 

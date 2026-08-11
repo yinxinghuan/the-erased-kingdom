@@ -21,7 +21,7 @@
     "test:restart": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs restart",
     "test:status-drawer": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs status-drawer",
     "test:i18n": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs i18n",
-    "test:avatar": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs avatar",
+    "test:avatar": "TMPDIR=/private/tmp tsx _qa/image-identity.ts && /Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs avatar && /Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs avatar-late-profile",
     "test:finale-flow": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs finale-flow",
     "test:responsive": "/Users/yin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node _qa/runtime-suite.mjs responsive",
     "test:ending": "TMPDIR=/private/tmp tsx _qa/ending-director.ts",

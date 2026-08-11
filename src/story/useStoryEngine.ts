@@ -9,6 +9,7 @@ import { resolveCartridge } from './cartridges'
 import { applyParsedScene, createImageBlock, createInitialSave, createRecoveryChoices, localizeKnownState, normalizeCharacterState, updateImageBlock, updateInventoryItemImage } from './engine/reducer'
 import { parseStoryProtocol } from './engine/protocol'
 import { shouldUsePlayerImageReference, upgradePendingSceneImagePrompts } from './engine/imageDirector'
+import { buildPlayerIdentityPrompt } from './engine/imageIdentity'
 import { buildDangerDirective, normalizeDangerState } from './engine/dangerDirector'
 import { buildEndingSnapshot, normalizeFacts } from './engine/endingDirector'
 import { generateStoryEnding } from './engine/endingAdapter'
@@ -247,10 +248,8 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
             const usePlayerReference = Boolean(isScene && imageIdentity.refUrl && (
               visibility === 'true' || (visibility !== 'false' && shouldUsePlayerImageReference(prompt, cartridge.playerImageAliases))
             ))
-            const identityExclusions = (cartridge.playerImageExclusions ?? []).filter(Boolean).join('; ')
-            const identityRole = cartridge.playerImageRole?.trim() || 'the player protagonist who performs the dominant action'
             const identityPrompt = usePlayerReference
-              ? `${prompt}. HARD IDENTITY CAST MAP — assign identities before rendering and never swap them. PERSON A is the one and only player protagonist: ${identityRole}. Apply the reference image face ONLY to PERSON A. Preserve PERSON A's recognizable face geometry, age presentation, skin tone, hairstyle, facial hair, eyewear and distinctive facial features consistently. PERSON A must be the dominant foreground or midground human, must perform the scene's main action, and must have a naturally readable face. Every companion, named NPC, background person and creature is a different identity and MUST NOT inherit, resemble, blend with, duplicate, mirror or swap faces with the reference person.${identityExclusions ? ` Explicit non-player identities and exclusions: ${identityExclusions}.` : ''} Never put the referenced human face on Mara, Oren, Toma, a horse, deer, wolf, beast, animal body, helmet, mask, drawing, reflection, statue or background figure. Preserve normal human and animal anatomy: no human face on an animal and no animal muzzle on a human. The reference is a technical identity-and-aspect plate: ignore its original background, close crop, pose and composition. Adapt wardrobe, action, lighting, camera distance and staging naturally to this fictional world while keeping PERSON A's identity. Keep the environment and story event visually dominant; do not turn the scene into a selfie or portrait.`
+              ? buildPlayerIdentityPrompt(prompt, cartridge)
               : prompt
             lastImageCallAt.current = Date.now()
             const url = await generate(usePlayerReference
@@ -260,8 +259,25 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
               ? updateImageBlock(current, entityId, { status: 'ready', url })
               : updateInventoryItemImage(current, entityId, { status: 'ready', url, styleVersion: ITEM_IMAGE_STYLE_VERSION }))
             return
-          } catch {
-            if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 3000 : 8000))
+          } catch (cause) {
+            const retryable = typeof cause === 'object' && cause !== null && 'retryable' in cause
+              ? Boolean((cause as { retryable?: boolean }).retryable)
+              : true
+            const retryAfterMs = typeof cause === 'object' && cause !== null && 'retryAfterSeconds' in cause
+              ? Math.max(0, Number((cause as { retryAfterSeconds?: number }).retryAfterSeconds ?? 0) * 1000)
+              : 0
+            console.warn('[scene-image] generation attempt failed', {
+              entityId,
+              attempt: attempt + 1,
+              code: typeof cause === 'object' && cause !== null && 'code' in cause ? String((cause as { code?: string }).code ?? '') : '',
+              retryable,
+              retryAfterMs,
+            })
+            if (!retryable || attempt >= 2) break
+            await new Promise((resolve) => window.setTimeout(
+              resolve,
+              Math.max(attempt === 0 ? 3000 : 8000, retryAfterMs),
+            ))
           }
         }
         if (imageAttempt.current === queuedImageKey) commit((current) => isScene
