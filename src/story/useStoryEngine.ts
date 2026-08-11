@@ -8,13 +8,13 @@ import { remoteAdapter } from './adapters/remote'
 import { resolveCartridge } from './cartridges'
 import { applyParsedScene, createImageBlock, createInitialSave, createRecoveryChoices, localizeKnownState, normalizeCharacterState, updateImageBlock, updateInventoryItemImage } from './engine/reducer'
 import { parseStoryProtocol } from './engine/protocol'
-import { shouldUsePlayerImageReference, upgradePendingSceneImagePrompts } from './engine/imageDirector'
+import { shouldRepairDirectPlayerAction, shouldUsePlayerImageReference, upgradePendingSceneImagePrompts } from './engine/imageDirector'
 import { buildPlayerIdentityPrompt } from './engine/imageIdentity'
 import { buildDangerDirective, normalizeDangerState } from './engine/dangerDirector'
 import { buildEndingSnapshot, normalizeFacts } from './engine/endingDirector'
 import { generateStoryEnding } from './engine/endingAdapter'
 import { t } from './i18n'
-import { ITEM_IMAGE_STYLE_VERSION, SCENE_IMAGE_PROMPT_VERSION, type AdapterProgress, type InventoryItem, type Locale, type StoryArchive, type StoryCartridge, type StoryMediaDirector, type StoryMode, type StorySave } from './types'
+import { ITEM_IMAGE_STYLE_VERSION, PLAYER_IMAGE_REFERENCE_VERSION, SCENE_IMAGE_PROMPT_VERSION, type AdapterProgress, type InventoryItem, type Locale, type StoryArchive, type StoryCartridge, type StoryMediaDirector, type StoryMode, type StorySave } from './types'
 
 const DEFAULT_MEDIA_DIRECTOR: StoryMediaDirector = {
   imageProfile: 'fast-small',
@@ -174,6 +174,7 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
   const [failedAction, setFailedAction] = useState<{ action: string; locale: Locale } | null>(null)
   const seeded = useRef(false)
   const imageAttempt = useRef('')
+  const openingIdentityRepair = useRef('')
   const imageBusy = useRef(false)
   const videoBusy = useRef(false)
   const videoAttempt = useRef('')
@@ -222,14 +223,38 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
     })
   }, [cartridge.id, persist])
 
-  const queuedSceneImage = save.blocks.find((block) => block.kind === 'image' && block.data?.status === 'queued')
+  const pendingSceneImage = save.blocks.find((block) => block.kind === 'image' && block.data?.status === 'queued')
+  const queuedSceneImage = imageIdentity.ready ? pendingSceneImage : undefined
   const queuedItemImage = save.inventory.find((item) => item.imageStatus === 'queued')
   const queuedImageKey = queuedSceneImage ? `scene:${queuedSceneImage.id}` : queuedItemImage ? `item:${queuedItemImage.id}` : ''
 
   useEffect(() => {
+    if (!save.entered || !imageIdentity.refUrl) return
+    const repairIds = save.blocks.flatMap((block, index) => {
+      if (block.kind !== 'image' || (block.id !== 'image-0' && block.id !== 'image-1')) return []
+      if (block.data?.status !== 'ready' || Number(block.data?.identityRefVersion ?? 0) >= PLAYER_IMAGE_REFERENCE_VERSION) return []
+      const prompt = String(block.data?.prompt ?? '')
+      const previousAction = [...save.blocks.slice(0, index)].reverse().find((candidate) => candidate.kind === 'event' && candidate.id.startsWith('action-'))?.text ?? ''
+      const directPlayerShot = block.data?.playerVisible === 'true'
+        || (block.id === 'image-1' && shouldRepairDirectPlayerAction(prompt, previousAction, cartridge.playerImageAliases))
+      return directPlayerShot ? [block.id] : []
+    })
+    if (!repairIds.length) return
+    const repairKey = repairIds.join('|')
+    if (openingIdentityRepair.current === repairKey) return
+    openingIdentityRepair.current = repairKey
+    imageAttempt.current = ''
+    commit((current) => ({
+      ...current,
+      blocks: current.blocks.map((block) => repairIds.includes(block.id) && block.kind === 'image'
+        ? { ...block, data: { ...block.data, status: 'queued', url: '', playerVisible: 'true' } }
+        : block),
+    }))
+  }, [cartridge.playerImageAliases, commit, imageIdentity.refUrl, save.blocks, save.entered])
+
+  useEffect(() => {
     if (!save.entered || !queuedImageKey || imageBusy.current || imageAttempt.current === queuedImageKey) return
     const isScene = Boolean(queuedSceneImage)
-    if (isScene && !imageIdentity.ready) return
     const prompt = queuedSceneImage ? String(queuedSceneImage.data?.prompt ?? '') : queuedItemImage ? inventoryImagePrompt(queuedItemImage, cartridge) : ''
     if (!prompt) return
     imageBusy.current = true
@@ -256,7 +281,7 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
               ? { prompt: identityPrompt, ref_url: imageIdentity.refUrl, requestedSize: mediaDirector.imageTarget, profile: mediaDirector.imageProfile }
               : { prompt: identityPrompt, requestedSize: mediaDirector.imageTarget, profile: mediaDirector.imageProfile })
             if (imageAttempt.current === queuedImageKey) commit((current) => isScene
-              ? updateImageBlock(current, entityId, { status: 'ready', url })
+              ? updateImageBlock(current, entityId, { status: 'ready', url, identityRefVersion: usePlayerReference ? PLAYER_IMAGE_REFERENCE_VERSION : 0 })
               : updateInventoryItemImage(current, entityId, { status: 'ready', url, styleVersion: ITEM_IMAGE_STYLE_VERSION }))
             return
           } catch (cause) {

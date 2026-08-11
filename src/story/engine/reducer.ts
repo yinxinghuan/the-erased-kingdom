@@ -167,7 +167,7 @@ export function createImageBlock(id: string, location: string, prompt: string, s
   return { id, kind: 'image', text: location, data: { prompt, status, url, ...metadata } }
 }
 
-export function updateImageBlock(save: StorySave, blockId: string, patch: { status?: ImageBlockStatus; url?: string; videoStatus?: VideoBlockStatus; videoUrl?: string; videoTaskId?: string }): StorySave {
+export function updateImageBlock(save: StorySave, blockId: string, patch: { status?: ImageBlockStatus; url?: string; videoStatus?: VideoBlockStatus; videoUrl?: string; videoTaskId?: string; playerVisible?: string; identityRefVersion?: number }): StorySave {
   return {
     ...save,
     blocks: save.blocks.map((block) => block.id === blockId && block.kind === 'image'

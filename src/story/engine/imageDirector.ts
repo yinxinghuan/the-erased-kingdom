@@ -193,6 +193,15 @@ export function shouldUsePlayerImageReference(prompt: string, aliases: string[] 
   return playerVisible && !explicitlyEmpty
 }
 
+/**
+ * Repairs older AI shot metadata only when the player chose a direct physical
+ * action. Listening, watching and delegated actions remain NPC-led even if the
+ * word "courier" appears in continuity notes.
+ */
+export function shouldRepairDirectPlayerAction(prompt: string, action: string, aliases: string[] = []): boolean {
+  return Boolean(action.trim() && !actionDelegatesVisualAgency(action) && shouldUsePlayerImageReference(prompt, aliases))
+}
+
 export function upgradePendingSceneImagePrompts(save: StorySave, cartridge: StoryCartridge): StorySave {
   let changed = false
   const blocks = save.blocks.map((block, index) => {

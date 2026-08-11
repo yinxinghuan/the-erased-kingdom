@@ -46,7 +46,7 @@ if (testCase === 'avatar-late-profile') {
     window.setTimeout(() => {
       window.Aigram = { isInAigram: true, telegramId: 'late-player-42' }
       window.postMessage('qa-shell-identity-ready', '*')
-    }, 700)
+    }, 4_200)
   }, { avatarUrl })
 }
 
@@ -193,6 +193,13 @@ if (testCase === 'persistence') {
   if (protagonistRequests.some((request) => String(request.prompt).length > 4000)) throw new Error(`player prompt exceeded the Media Service contract: ${JSON.stringify(protagonistRequests.map((request) => String(request.prompt).length))}`)
   if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD IDENTITY CAST MAP'))) throw new Error(`a player scene omitted the hard identity cast map: ${JSON.stringify(protagonistRequests)}`)
   if (protagonistRequests.some((request) => /[\u3400-\u9fff]/.test(String(request.prompt)))) throw new Error('a renderer prompt leaked Chinese characters')
+  const identityVersions = await page.evaluate(() => {
+    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    return archive.worlds?.['the-erased-kingdom']?.blocks
+      ?.filter((block) => block.kind === 'image' && block.data?.playerVisible === 'true')
+      ?.map((block) => block.data?.identityRefVersion)
+  })
+  if (!identityVersions?.length || identityVersions.some((version) => version !== 1)) throw new Error(`player images were not stamped with the identity renderer version: ${JSON.stringify(identityVersions)}`)
 } else if (testCase === 'avatar-late-profile') {
   await fresh(); await enter()
   await page.waitForFunction(() => {
@@ -207,6 +214,34 @@ if (testCase === 'persistence') {
   const latePlayer = page.locator('.st-roster__player')
   await latePlayer.getByText('Late Bridge Player', { exact: true }).waitFor()
   if (await latePlayer.locator('img').getAttribute('src') !== avatarUrl) throw new Error('late shell avatar was not reflected in the player record')
+} else if (testCase === 'avatar-saved-opening-repair') {
+  await fresh('zh', true); await enter(); await chooseFirst()
+  await page.waitForFunction(() => {
+    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    return archive.worlds?.['the-erased-kingdom']?.blocks?.find((block) => block.id === 'image-1')?.data?.status === 'ready'
+  }, null, { timeout: 12000 })
+  await page.evaluate(() => {
+    const key = 'the-erased-kingdom-save'
+    const archive = JSON.parse(localStorage.getItem(key) || '{}')
+    archive.worlds['the-erased-kingdom'].blocks = archive.worlds['the-erased-kingdom'].blocks.map((block) => {
+      if (block.id !== 'image-0' && block.id !== 'image-1') return block
+      const data = { ...block.data, status: 'ready', url: `https://qa.invalid/legacy-${block.id}.png`, playerVisible: 'true' }
+      delete data.identityRefVersion
+      return { ...block, data }
+    })
+    localStorage.setItem(key, JSON.stringify(archive))
+  })
+  const beforeRepair = imageRequests.length
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.waitForFunction(() => {
+    const archive = JSON.parse(localStorage.getItem('the-erased-kingdom-save') || '{}')
+    const early = archive.worlds?.['the-erased-kingdom']?.blocks?.filter((block) => block.id === 'image-0' || block.id === 'image-1') ?? []
+    return early.length === 2 && early.every((block) => block.data?.status === 'ready' && block.data?.identityRefVersion === 1)
+  }, null, { timeout: 15000 })
+  const repairedRequests = imageRequests.slice(beforeRepair)
+  if (repairedRequests.length !== 2 || repairedRequests.some((request) => request.ref_url !== avatarUrl)) {
+    throw new Error(`saved opening images were not repaired with the player reference: ${JSON.stringify(repairedRequests)}`)
+  }
 } else if (testCase === 'finale-flow') {
   const route = [
     '拉住正在褪色的玛拉', '写回面包房，保住补给和村民', '检查它是否只追逐文字', '让奥伦亲自检查量尺',

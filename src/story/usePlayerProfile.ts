@@ -86,7 +86,7 @@ export function usePlayerProfile(): PlayerProfile {
       if (!cancelled && !isInAigramNow()) {
         setProfile((current) => ({ ...current, loaded: true }))
       }
-    }, 2_500)
+    }, 10_500)
     const onVisibility = () => { if (!document.hidden) check() }
     window.addEventListener('message', check)
     window.addEventListener('focus', check)
