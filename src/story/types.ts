@@ -59,7 +59,7 @@ export type ImageBlockStatus = 'idle' | 'queued' | 'generating' | 'ready' | 'fai
 export type VideoBlockStatus = 'idle' | 'queued' | 'generating' | 'ready' | 'failed'
 export const ITEM_IMAGE_STYLE_VERSION = 2
 export const SCENE_IMAGE_PROMPT_VERSION = 8
-export const PLAYER_IMAGE_REFERENCE_VERSION = 1
+export const PLAYER_IMAGE_REFERENCE_VERSION = 2
 export type SceneImageSubject = 'player' | 'environment' | 'others'
 export interface StoryBlock { id: string; kind: 'narration' | 'dialogue' | 'check' | 'change' | 'event' | 'summary' | 'image'; text: string; speaker?: string; tone?: string; data?: Record<string, string | number> }
 export interface EntityMetric { label: string; value: string }

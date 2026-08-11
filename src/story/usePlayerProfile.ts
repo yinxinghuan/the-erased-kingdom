@@ -58,7 +58,8 @@ export function usePlayerProfile(): PlayerProfile {
       })
       return true
     } catch {
-      setProfile((current) => ({ ...current, loaded: true }))
+      // Keep the opening image paused during transient bridge/profile errors.
+      // The bounded fallback below releases play while retries continue.
       return false
     } finally {
       if (loadingPlayerId.current === playerId) loadingPlayerId.current = null
@@ -77,16 +78,21 @@ export function usePlayerProfile(): PlayerProfile {
     const bootstrap = window.setInterval(() => {
       attempts += 1
       check()
-      if (attempts >= 20 || resolvedPlayerId.current) window.clearInterval(bootstrap)
+      if (attempts >= 60 || resolvedPlayerId.current) window.clearInterval(bootstrap)
     }, 500)
     // External visitors must not wait indefinitely for a bridge that does not
     // exist. If Aigram appears later, message/focus listeners below still
     // replace the fallback before the next generated scene.
     const fallbackReady = window.setTimeout(() => {
-      if (!cancelled && !isInAigramNow()) {
+      if (!cancelled && !resolvedPlayerId.current && !isInAigramNow()) {
         setProfile((current) => ({ ...current, loaded: true }))
       }
     }, 10_500)
+    const hardFallbackReady = window.setTimeout(() => {
+      if (!cancelled && !resolvedPlayerId.current) {
+        setProfile((current) => ({ ...current, loaded: true }))
+      }
+    }, 30_500)
     const onVisibility = () => { if (!document.hidden) check() }
     window.addEventListener('message', check)
     window.addEventListener('focus', check)
@@ -96,6 +102,7 @@ export function usePlayerProfile(): PlayerProfile {
       cancelled = true
       window.clearInterval(bootstrap)
       window.clearTimeout(fallbackReady)
+      window.clearTimeout(hardFallbackReady)
       window.removeEventListener('message', check)
       window.removeEventListener('focus', check)
       document.removeEventListener('visibilitychange', onVisibility)

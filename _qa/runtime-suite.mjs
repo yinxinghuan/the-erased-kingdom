@@ -181,7 +181,7 @@ if (testCase === 'persistence') {
   }, null, { timeout: 9000 })
   const openingCharacterRequest = imageRequests.find((request) => request.ref_url && String(request.prompt).includes('BEFORE the player chooses'))
   if (!openingCharacterRequest || openingCharacterRequest.ref_url !== avatarUrl) throw new Error(`original avatar reference was not used for the opening player: ${JSON.stringify(imageRequests)}`)
-  const actionCharacterRequest = imageRequests.find((request) => request.ref_url && String(request.prompt).includes('same person performing the dominant player action'))
+  const actionCharacterRequest = imageRequests.find((request) => request !== openingCharacterRequest && request.ref_url && String(request.prompt).includes('HARD FULL-VISUAL-IDENTITY CAST MAP'))
   if (!actionCharacterRequest) throw new Error('identity action contract missing from the first chosen action prompt')
   await page.locator('.ct-turn-next').click()
   await page.getByRole('button', { name: '写回桥梁，保住离村道路' }).click()
@@ -194,7 +194,8 @@ if (testCase === 'persistence') {
   if (protagonistRequests.some((request) => request.ref_url !== avatarUrl)) throw new Error(`player reference changed between scenes: ${JSON.stringify(protagonistRequests)}`)
   if (protagonistRequests.some((request) => request.mode !== 'edit')) throw new Error(`player scene did not use the identity-detail edit endpoint: ${JSON.stringify(protagonistRequests)}`)
   if (protagonistRequests.some((request) => String(request.prompt).length > 4000)) throw new Error(`player prompt exceeded the Media Service contract: ${JSON.stringify(protagonistRequests.map((request) => String(request.prompt).length))}`)
-  if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD IDENTITY CAST MAP'))) throw new Error(`a player scene omitted the hard identity cast map: ${JSON.stringify(protagonistRequests)}`)
+  if (protagonistRequests.some((request) => !String(request.prompt).includes('HARD FULL-VISUAL-IDENTITY CAST MAP'))) throw new Error(`a player scene omitted the full visual identity cast map: ${JSON.stringify(protagonistRequests)}`)
+  if (protagonistRequests.some((request) => !String(request.prompt).includes('MUST NOT be invented'))) throw new Error(`a player scene omitted absent-body protection: ${JSON.stringify(protagonistRequests)}`)
   if (protagonistRequests.some((request) => /[\u3400-\u9fff]/.test(String(request.prompt)))) throw new Error('a renderer prompt leaked Chinese characters')
   const identityVersions = await page.evaluate(() => {
     const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
@@ -202,7 +203,7 @@ if (testCase === 'persistence') {
       ?.filter((block) => block.kind === 'image' && block.data?.playerVisible === 'true')
       ?.map((block) => block.data?.identityRefVersion)
   })
-  if (!identityVersions?.length || identityVersions.some((version) => version !== 1)) throw new Error(`player images were not stamped with the identity renderer version: ${JSON.stringify(identityVersions)}`)
+  if (!identityVersions?.length || identityVersions.some((version) => version !== 2)) throw new Error(`player images were not stamped with the identity renderer version: ${JSON.stringify(identityVersions)}`)
 } else if (testCase === 'avatar-late-profile') {
   await fresh(); await enter()
   await page.waitForFunction(() => {
@@ -239,7 +240,7 @@ if (testCase === 'persistence') {
   await page.waitForFunction(() => {
     const archive = JSON.parse(window.alteruLocalStorage.getItem('the-erased-kingdom-save') || '{}')
     const early = archive.worlds?.['the-erased-kingdom']?.blocks?.filter((block) => block.id === 'image-0' || block.id === 'image-1') ?? []
-    return early.length === 2 && early.every((block) => block.data?.status === 'ready' && block.data?.identityRefVersion === 1)
+    return early.length === 2 && early.every((block) => block.data?.status === 'ready' && block.data?.identityRefVersion === 2)
   }, null, { timeout: 15000 })
   const repairedRequests = imageRequests.slice(beforeRepair)
   if (repairedRequests.length !== 2 || repairedRequests.some((request) => request.ref_url !== avatarUrl)) {

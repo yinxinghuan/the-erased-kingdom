@@ -170,7 +170,7 @@ function buildScenePrompt(
   const direction = cartridge.sceneImageDirection ?? `${cartridge.theme.material} story-world editorial illustration`
   const target = cartridge.mediaDirector?.imageTarget ?? { width: 640, height: 360 }
   const frameInstruction = target.height > target.width
-    ? 'Create one fresh 4:5 portrait cinematic illustration in the established story world. It must survive a full-bleed responsive crop: keep the dominant action, faces and essential props inside the central 58% safe column, and extend the environment naturally to every edge.'
+    ? 'Create one fresh 4:5 portrait cinematic illustration in the established story world. It must survive a full-bleed responsive crop: keep the dominant action, identity-defining head or body cues, and essential props inside the central 58% safe column, and extend the environment naturally to every edge.'
     : 'Create one fresh 16:9 widescreen cinematic illustration in the established story world. Compose for a horizontal frame with useful negative space near the lower edge for a short interface subtitle.'
   return [
     frameInstruction,
@@ -178,7 +178,7 @@ function buildScenePrompt(
     `Latest visible story beat, which overrides older continuity hints: ${beat}.`,
     `Current location hint: ${CJK_RE.test(latestLocation(next, parsed)) ? (next.map.find((node) => node.current)?.id ?? 'current established location').replace(/-/g, ' ') : latestLocation(next, parsed)}. Use it only when consistent with the latest visible beat; never drag an earlier location into a newer scene.`,
     `Mandatory art direction: ${direction}.`,
-    playerVisible ? `The player protagonist is the dominant visual actor in this frame and must be the same person performing the dominant player action. ${cartridge.playerImageRole ? `Their story role and visual anchor: ${cartridge.playerImageRole}.` : ''} Do not assign that action to a substitute character, duplicate protagonist, generic courier or look-alike. Keep the protagonist's face clearly visible in a natural three-quarter or frontal view; do not hide it behind a helmet, animal, companion, foreground prop or extreme profile.` : '',
+    playerVisible ? `The player protagonist is the dominant visual actor in this frame and must be the same referenced subject performing the dominant player action. ${cartridge.playerImageRole ? `Their narrative role and required story props: ${cartridge.playerImageRole}.` : ''} Do not assign that action to a substitute character, duplicate protagonist, generic courier or look-alike. Keep the protagonist's identity-defining face, mask, covering, costume, silhouette or body form clearly readable as it actually appears in the supplied reference; do not reveal or invent a face that the reference hides or lacks.` : '',
     'Compose one readable moment with one dominant action and at most two focal subjects. Choose a camera position, scale, lighting pattern and silhouette that differ from earlier images.',
     'Ignore all cover art and opening-scene imagery. Derive the depicted location, action, subjects, props and weather only from the primary shot brief and latest visible story beat.',
     'Show only people, objects, places and consequences established in the latest visible story. No montage, split screen or flash-forward.',
