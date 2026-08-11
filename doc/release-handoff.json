@@ -36,7 +36,7 @@
     "browserTargetSizes": ["320x568", "390x844", "1024x768", "1440x900"],
     "uiFlow": "entry -> decision -> result -> next -> decision -> finale -> ending",
     "productionMediaStillRequiresLiveSampling": true,
-    "avatarIdentityContract": "image_subject owns the original 1:1 avatar reference; only player-dominant action shots receive it through ordinary image edit; output size is independent; companions, NPCs and animals are explicitly excluded"
+    "avatarIdentityContract": "the local director may correct a mislabeled others subject when a direct player action and courier/player shot agree; player-dominant shots receive the original 1:1 avatar through ordinary image edit; delegated, NPC, environment and animal shots are excluded"
   },
   "deployment": {
     "performed": true,

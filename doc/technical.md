@@ -68,7 +68,7 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 
 ### 场景生图与人物身份
 
-`imageDirector.ts` 以 `SCENE_IMAGE_PROMPT_VERSION=8` 重建待生成场景提示。`image_subject` 是明确的头像归属合同：`player` 仅用于玩家执行主要可见动作的镜头，`others / environment` 会覆盖关键词推断，避免玩家只是陪衬时仍把头像错误贴到玛拉或其他人物。只有标签缺失时，本地导演才用 `playerImageAliases` 推断。`useStoryEngine.ts` 随后为玩家主导镜头直传同一张原始头像，以普通 image edit 模式独立生成 `512×640` 场景，并追加 PERSON A 身份演员表、NPC 排除名单和禁止人脸/动物混合约束。`imageIdentity.ts` 把场景与身份合同限制在媒体服务的 `4000` 字符上限内，防止身份镜头因超长提示失败。
+`imageDirector.ts` 以 `SCENE_IMAGE_PROMPT_VERSION=8` 重建待生成场景提示。`image_subject` 是头像归属提议而非不可质疑的真源：`player` 直接启用头像，`environment` 直接禁用；当 AI 错把包含明确 courier/player 主动作的直接玩家行动标成 `others` 时，本地导演会依据玩家刚提交的动作与镜头演员纠正为玩家。以“请、让、询问、观察、跟随、等待”等开头的委托/旁观行动仍尊重 `others`，避免玛拉或其他 NPC 主导镜头继承玩家脸。`useStoryEngine.ts` 随后为玩家主导镜头直传同一张原始头像，以普通 image edit 模式独立生成 `512×640` 场景，并追加 PERSON A 身份演员表、NPC 排除名单和禁止人脸/动物混合约束。`imageIdentity.ts` 把场景与身份合同限制在媒体服务的 `4000` 字符上限内，防止身份镜头因超长提示失败。
 
 `usePlayerProfile.ts` 不再把首帧读取时的 shell 状态当成永久结论：它为宿主 bridge 留出 `2.5s` 启动窗口，并在初始十秒、宿主消息、页面重新聚焦和恢复可见时按实时 `isInAigramNow()` / `getTelegramId()` 重新解析身份。这样平台晚于 iframe 注入玩家资料时，开场生图仍会等待真实头像，而不会提前锁定默认角色。
 

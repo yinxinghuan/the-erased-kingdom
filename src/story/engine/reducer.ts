@@ -482,7 +482,7 @@ export function applyParsedScene(
   // the dedicated resume action supplied by the Composer.
   if (!next.sessionEnded && next.choices.length < 2) next.choices = createRecoveryChoices(next, cartridge)
 
-  const image = chooseSceneImage(save, next, parsed, cartridge, imagePrompt, imageSubject)
+  const image = chooseSceneImage(save, next, parsed, cartridge, imagePrompt, imageSubject, actionId)
   const milestone = milestoneReason(parsed, dangerDirective)
   next.blocks = [
     ...next.blocks,

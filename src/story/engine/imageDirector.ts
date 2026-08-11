@@ -130,14 +130,23 @@ function latestLocation(next: StorySave, parsed: ParsedScene): string {
   return update?.type === 'map_update' ? update.location : next.location
 }
 
-function playerIsVisible(cartridge: StoryCartridge, parsed: ParsedScene, proposal?: string, subject?: SceneImageSubject): boolean {
+function actionDelegatesVisualAgency(action: string): boolean {
+  return /^(?:先)?(?:请|让|叫|要求|命令|询问|问|听|观察|看着|查看|跟随|等待|交给|委托)|^(?:ask|tell|let|have|order|request|question|listen|watch|observe|follow|wait|leave\b.*\bto)\b/i.test(action.trim())
+}
+
+function playerIsVisible(cartridge: StoryCartridge, parsed: ParsedScene, proposal?: string, subject?: SceneImageSubject, action = ''): boolean {
   const shot = proposal?.trim() || visibleBeat(parsed)
   if (/\b(no people|nobody|unoccupied|environment-only|object-only)\b|无人|空镜|纯环境|物品特写/i.test(shot)) return false
-  // Explicit authorship wins over lexical inference. `player` means that the
-  // referenced protagonist owns the visual beat; `others` must not receive
-  // the player's face even when the player appears in supporting prose.
   if (subject === 'player') return true
-  if (subject === 'others' || subject === 'environment') return false
+  if (subject === 'environment') return false
+  if (subject === 'others') {
+    // Models sometimes label a direct player action as `others` merely because
+    // a named companion is also visible. A concrete player-selected action plus
+    // an explicit player/courier actor in the English shot is stronger evidence.
+    // Delegated/listening/watching actions still respect `others`, preventing a
+    // companion-led scene from inheriting the player face.
+    return Boolean(action.trim() && !actionDelegatesVisualAgency(action) && mentionsPlayer(shot, cartridge))
+  }
   if (mentionsPlayer(shot, cartridge)) return true
   return false
 }
@@ -222,10 +231,11 @@ export function chooseSceneImage(
   cartridge: StoryCartridge,
   aiPrompt?: string,
   imageSubject?: SceneImageSubject,
+  action = '',
 ): SceneImageDecision {
   const proposal = aiPrompt?.trim()
   if (proposal) {
-    const visible = playerIsVisible(cartridge, parsed, proposal, imageSubject)
+    const visible = playerIsVisible(cartridge, parsed, proposal, imageSubject, action)
     return {
       prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', proposal, visible),
       source: 'ai',
@@ -235,7 +245,7 @@ export function chooseSceneImage(
   }
 
   const director = cartridge.imageDirector
-  const visible = playerIsVisible(cartridge, parsed, undefined, imageSubject)
+  const visible = playerIsVisible(cartridge, parsed, undefined, imageSubject, action)
   const triggers = detectTriggers(previous, parsed)
   const guaranteed = director ? firstTrigger(triggers, director.guaranteedTriggers) : undefined
   if (guaranteed) return { prompt: buildScenePrompt(cartridge, next, parsed, guaranteed, undefined, visible), source: 'director', reason: guaranteed, playerVisible: visible }

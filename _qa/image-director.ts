@@ -40,6 +40,12 @@ const maraLedImage = latestImage(maraLedScene)
 assert.equal(maraLedImage?.data?.playerVisible, 'false')
 assert.equal(shouldUsePlayerImageReference(String(maraLedImage?.data?.prompt), theErasedKingdom.playerImageAliases), true)
 
+const mislabeledDirectPlayerScene = applyParsedScene(initial, parseStoryProtocol(`你抓住玛拉，把她从断路边缘拉回来。
+[choices: "检查伤势"|"封住断路"|"继续前进"]`, 'zh'), theErasedKingdom, '拉住正在褪色的玛拉', 'the courier pulls Mara away from the collapsing road while Mara regains her balance', 'others')
+const correctedPlayerImage = latestImage(mislabeledDirectPlayerScene)
+assert.equal(correctedPlayerImage?.data?.playerVisible, 'true')
+assert.match(String(correctedPlayerImage?.data?.prompt), /generic courier or look-alike/)
+
 const unsafeChineseProposal = applyParsedScene(initial, parseStoryProtocol(`你在总册塔内展开地图。
 [choices: "封住入口"|"寻找玛拉"|"检查地图"]`, 'zh'), theErasedKingdom, '检查地图', '主角信使在写满中文的地图前行动', 'player')
 const safePrompt = String(latestImage(unsafeChineseProposal)?.data?.prompt)
