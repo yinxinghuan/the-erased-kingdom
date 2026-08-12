@@ -30,6 +30,7 @@
     "test:decision-context": "TMPDIR=/private/tmp tsx _qa/decision-context.ts",
     "test:character-debut": "TMPDIR=/private/tmp tsx _qa/character-debut.ts",
     "test:domain": "TMPDIR=/private/tmp tsx _qa/domain-rules.ts",
+    "test:opening": "TMPDIR=/private/tmp tsx _qa/opening-contract.ts",
     "test:stage-narrative": "TMPDIR=/private/tmp tsx _qa/stage-narrative.ts"
   },
   "dependencies": {

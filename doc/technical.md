@@ -22,7 +22,7 @@ src/story/
   engine/
     domainRules.ts               # 领域意图、前置条件、原子 effects 与派生状态
     protocol.ts                  # AI 文本协议解析与不完整图片元数据清理
-    stageNarrative.ts            # 条件情境字幕与冗余选择提示过滤
+  stageNarrative.ts            # 条件情境字幕与冗余选择提示过滤
     reducer.ts                   # 权威状态变更、事实写入与见证页推导
     dangerDirector.ts            # warning → confrontation → resolution
     endingDirector.ts            # 终局能力、快照、验证、回退与确定性 ID
@@ -52,6 +52,7 @@ _qa/
   audio-director.ts              # 9 类语义音效优先级与 8 类地区声景映射
   runtime-suite.mjs              # 存档、真实音频图解锁、头像、重开、双语和浏览器全流程
   ui/                            # 320、390、1024、1440 真实运行截图
+  opening-contract.ts / opening-sequence.mjs # 六拍开场内容合同与双尺寸浏览器回归
 ```
 
 ## 3. 核心模块
@@ -90,7 +91,7 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 
 ### 屏幕适配
 
-独立游戏默认 `civic`；查询参数 `?ui=living` 可切回对话流表现层做 A/B 比较。两种表现层都严格执行 `decision → submitting → result → next → decision`：`stageNarrative.ts` 选取首段结果与末段决策前提，结果阶段隐藏常驻字幕并由结果薄层承载首段结果，用户推进后才恢复末段决策字幕与下一组选项。320×568、390×844、1024×768 与 1440×900 已做运行截图和横向溢出检查。
+独立游戏默认 `civic`；查询参数 `?ui=living` 可切回对话流表现层做 A/B 比较。第 0 场先由 `stageNarrativeBlocks()` 取出六个作者节拍并单向分页，`openingReady` 在末拍前同时拦截 Composer 与数字键；末拍移除页控件并同步开放行动。普通回合继续严格执行 `decision → submitting → result → next → decision`：`stageNarrative.ts` 选取首段结果与末段决策前提，结果阶段隐藏常驻字幕并由结果薄层承载首段结果，用户推进后才恢复末段决策字幕与下一组选项。320×568、390×844、1024×768 与 1440×900 已做运行截图和横向溢出检查。
 
 ### 危险与失败
 
@@ -117,7 +118,7 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 - 扩展新地区时复用古林合同：每个本地人物显式传 `character_id`，每件可获得物品显式传 `item_id`，并为地区结算写入见证页、结算事实、地图后果和三项具体下一步；对应跨区测试放入 `_qa/`。
 - 调数值、危险频率、DC 与代价：编辑同文件的 `statDefinitions` / `dangerDirector`，引擎一般无需修改。
 - 新增终局能力或质量锚点：修改 cartridge 的 `endingDirector`，并同步 `doc/ending-grammar.json`；新能力必须声明获取条件、强制代价和互斥项。
-- 改 Civic 布局与视觉：编辑 `StoryShell.tsx`、`story.less` 与 `doc/visual.md`；改字幕价值判断编辑 `engine/stageNarrative.ts` 并运行 `npm run test:stage-narrative`；Living 分支仍保留，不能直接删除。
+- 改 Civic 布局与视觉：编辑 `StoryShell.tsx`、`story.less` 与 `doc/visual.md`；改字幕价值判断编辑 `engine/stageNarrative.ts` 并运行 `npm run test:stage-narrative`；改开场必须同步 `npm run test:opening` 与 `_qa/opening-sequence.mjs`。Living 分支仍保留，不能直接删除。
 - 替换入口画面：替换 `src/story/img/worlds/the-erased-kingdom*.webp`，保持入口 4:5、无 UI、无可读文字。
 - 改玩家出镜别名或生图身份规则：编辑 cartridge 的 `playerImageAliases`、`engine/imageDirector.ts` 与 `useStoryEngine.ts`；新增玩家职业称谓时必须同步回归测试。
 - 改媒体服务合同：编辑 `src/shared/runtime/media.ts`；临时回滚旧图片链路：在 URL 增加 `media_backend=legacy`。图片内容、头像归属与媒体传输层保持分离。

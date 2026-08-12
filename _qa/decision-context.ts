@@ -4,9 +4,9 @@ import { parseStoryProtocol } from '../src/story/engine/protocol'
 import { selectStageOverlay } from '../src/story/engine/stageNarrative'
 
 const openingDecision = selectStageOverlay(theErasedKingdom.opening.blocks, 'decision')
-assert.equal(openingDecision?.id, 'ek0')
-assert(openingDecision?.text.includes('最后一封普通公文'))
-assert(openingDecision?.text.includes('路牌上的村名'))
+assert.equal(openingDecision?.id, 'ek5')
+assert(openingDecision?.text.includes('玛拉的指尖'))
+assert(openingDecision?.text.includes('只能先保住一处'))
 
 const rescueMara = theErasedKingdom.demoTurns.find((turn) => turn.match.includes('拉住'))
 assert(rescueMara)
