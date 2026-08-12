@@ -61,7 +61,9 @@ _qa/
 
 `useStoryEngine.ts` 持有 `StorySave v7`。每次行动先产生本地即时反馈，再由 adapter 返回叙事协议；`reducer.ts` 统一写入地点、时间、目标、数值、物品、伙伴、关系、事实、危险和媒体块。AI 不直接拥有或修改存档。
 
-被治理行动在危险调度前由 `resolveDomainAction()` 判定。若规则命中，adapter 只生成裁判结果的自然叙述；`applyParsedScene()` 丢弃该回合模型提供的全部协议命令，再一次性提交本地 effects 和本地三选项。拒绝不消耗物品、不改变数值/事实/地点，也不推进危险 cadence。当前治理苹果谷三项首次抢救与三项互斥地标写回。
+被治理行动在危险调度前由 `resolveDomainAction()` 判定。若规则命中，完全跳过 adapter，以本地 authored text、effects 和三选项一次性提交；拒绝不消耗物品、不改变数值/事实/地点，也不推进危险 cadence。当前治理进入页的“亲手交付最后公文”、苹果谷三项首次抢救与三项互斥地标写回。
+
+`StoryShell.tsx` 对前 3 幕执行逐页阅读门禁：进入动作的结果先可见，玩家推进到该幕最后一页后才出现下一组行动。第 4 幕起回到普通长篇节奏，门禁不改变 80–120 个有效决策的章节结构。
 
 未来固定人物使用 `hiddenUntilIntroduced`。`createInitialSave()` 不预载奥伦、塞拉、伊莱和维尔；可见正文合法介绍后，稳定 `character_update` 才从 cartridge 定义创建。`normalizeCharacterState()` 只清理从未真正出现的旧存档预载，已经在正文、队伍或关系中留下证据的人物继续保留。
 

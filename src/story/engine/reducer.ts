@@ -3,7 +3,7 @@ import { t } from '../i18n'
 import { chooseSceneImage } from './imageDirector'
 import { createInitialDangerState, normalizeDangerState, settleDangerTurn } from './dangerDirector'
 import { canStartTrueEnding } from './endingDirector'
-import { applyDomainResolution, domainAllowsModelCommand, syncDomainDerivedState } from './domainRules'
+import { applyDomainResolution, domainAllowsModelCommand, resolveDomainAction, syncDomainDerivedState } from './domainRules'
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
@@ -33,6 +33,17 @@ export function createInitialSave(cartridge: StoryCartridge, remoteChatId?: stri
     finale: { status: 'idle' },
   }
   return syncDomainDerivedState(initial, cartridge)
+}
+
+export function enterStory(save: StorySave, cartridge: StoryCartridge): StorySave {
+  const openingImage = save.blocks.find((block) => block.kind === 'image')
+  const entered = { ...save, locale: cartridge.locale, entered: true }
+  const entryAction = cartridge.opening.entryAction?.trim()
+  if (entryAction && save.scene === 0 && !save.lastActionId) {
+    const resolution = resolveDomainAction(entered, cartridge, entryAction)
+    if (resolution?.status === 'accepted') return applyParsedScene(entered, { blocks: [], commands: [], raw: '' }, cartridge, entryAction, cartridge.opening.entryImagePrompt, 'player', undefined, resolution)
+  }
+  return openingImage && openingImage.data?.status === 'idle' ? updateImageBlock(entered, openingImage.id, { status: 'queued' }) : entered
 }
 
 type CharacterCommand = Extract<ParsedCommand, { type: 'character_update' | 'party_change' }>

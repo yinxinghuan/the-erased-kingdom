@@ -205,7 +205,7 @@ export function applyDomainResolution(save: StorySave, cartridge: StoryCartridge
     }
   })
   syncDomainDerivedState(save, cartridge)
-  blocks.push({ id: `domain-${save.scene}`, kind: 'event', text: resolution.successText, data: { domainRule: resolution.ruleId, domainStatus: 'accepted' } })
+  blocks.push({ id: `domain-${save.scene}`, kind: 'narration', text: resolution.successText, data: { domainRule: resolution.ruleId, domainStatus: 'accepted' } })
   return blocks
 }
 

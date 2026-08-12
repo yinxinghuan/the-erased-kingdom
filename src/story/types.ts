@@ -42,6 +42,7 @@ export interface StatDefinition {
   warningAt?: number
   dangerAt?: number
   maxDelta?: number
+  revealedByFact?: string
 }
 export interface SkillDefinition { id: string; label: string; value: number }
 export type CharacterStatus = 'known' | 'companion' | 'departed'
@@ -354,7 +355,7 @@ export interface StoryCartridge {
   initialFacts?: Record<string, StoryFactValue>
   statDefinitions: [StatDefinition, StatDefinition, StatDefinition]
   drawerLabels: Record<DrawerId, string>
-  opening: { location: string; time: string; objective: string; imagePrompt: string; blocks: StoryBlock[]; choices: Choice[] }
+  opening: { location: string; time: string; objective: string; imagePrompt: string; entryImagePrompt?: string; blocks: StoryBlock[]; choices: Choice[]; entryAction?: string }
   characters: CharacterDefinition[]
   initialPartyMemberIds?: string[]
   initialMap: MapNode[]

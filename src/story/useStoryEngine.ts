@@ -6,7 +6,7 @@ import { aigramAdapter } from './adapters/aigram'
 import { mockAdapter } from './adapters/mock'
 import { remoteAdapter } from './adapters/remote'
 import { resolveCartridge } from './cartridges'
-import { applyParsedScene, createImageBlock, createInitialSave, createRecoveryChoices, localizeKnownState, normalizeCharacterState, updateImageBlock, updateInventoryItemImage } from './engine/reducer'
+import { applyParsedScene, createImageBlock, createInitialSave, createRecoveryChoices, enterStory, localizeKnownState, normalizeCharacterState, updateImageBlock, updateInventoryItemImage } from './engine/reducer'
 import { isProtocolResidueText, parseStoryProtocol } from './engine/protocol'
 import { shouldRepairDirectPlayerAction, shouldUsePlayerImageReference, upgradePendingSceneImagePrompts } from './engine/imageDirector'
 import { buildPlayerIdentityPrompt } from './engine/imageIdentity'
@@ -354,11 +354,7 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
       .finally(() => { videoBusy.current = false })
   }, [commit, generateVideo, mediaDirector.minVideoGapTurns, mediaDirector.videoDuration, mediaDirector.videoEnabled, milestoneImage, milestoneKey, save.blocks, save.entered])
 
-  const enter = useCallback(() => commit((current) => {
-    const openingImage = current.blocks.find((block) => block.kind === 'image')
-    const entered = { ...current, locale: cartridge.locale, entered: true }
-    return openingImage && openingImage.data?.status === 'idle' ? updateImageBlock(entered, openingImage.id, { status: 'queued' }) : entered
-  }), [cartridge.locale, commit])
+  const enter = useCallback(() => commit((current) => enterStory(current, cartridge)), [cartridge, commit])
 
   const act = useCallback(async (action: string, actionLocale: Locale = cartridge.locale) => {
     const finale = saveRef.current.finale
@@ -371,7 +367,9 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
       const base = localizeKnownState(saveRef.current, cartridge, activeCartridge)
       const domainResolution = resolveDomainAction(base, activeCartridge, normalizedAction)
       const dangerDirective = domainResolution?.status === 'rejected' || domainOwnsDanger(domainResolution) ? undefined : buildDangerDirective(base, activeCartridge, normalizedAction)
-      const result = await adapter.send(normalizedAction, { cartridge: activeCartridge, save: base, actionId: normalizedAction, locale: actionLocale, dangerDirective, domainResolution }, setProgress)
+      const result = domainResolution
+        ? { content: '' }
+        : await adapter.send(normalizedAction, { cartridge: activeCartridge, save: base, actionId: normalizedAction, locale: actionLocale, dangerDirective }, setProgress)
       const parsed = parseStoryProtocol(result.content, actionLocale)
       commit((current) => applyParsedScene(localizeKnownState(current, cartridge, activeCartridge), parsed, activeCartridge, normalizedAction, result.imagePrompt, result.imageSubject, dangerDirective, domainResolution))
       setPendingAction('')
