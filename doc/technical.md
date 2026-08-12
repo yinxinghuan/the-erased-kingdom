@@ -131,3 +131,9 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 - `worker/index.js` 是 AIgram 自托管部署器要求的最小具名 `handleApi` 入口；部署器会把同一次 `npm run build` 产生的 `dist/` 封装为静态资源。
 - `GET /api/health` 只用于发布健康检查。游戏存档、玩家资料、生图和视频仍由 `src/shared/` 的平台运行时适配器负责；该 worker 不创建第二套存储或共享世界。
 - 正式主地址固定使用永久 UUID `0a86a3a1-9328-406a-955f-8a2a8d7e704c`，Pages 只作为同提交的前端镜像。
+
+## 连续性守门（2026-08-13）
+
+- Cartridge 通过 `transitionAnchor` 声明“玛拉的边境图册”；`src/story/engine/continuity.ts` 生成地点桥接、压缩 `decisionContext` 并核验选项名词是否已有可见依据。
+- `reducer.ts` 在 `map_update` 与受管辖地图事务提交前插入桥接，并在选择落入 UI 前执行 grounded-choice 检查；旧存档升级到 StorySave v8 时从现有目标补齐 `decisionContext`。
+- `_qa/continuity-gate.ts` 以未登场的“国王 / 快递员 / 玻璃王国”作为反例，同时断言中转锚点先于目的地正文。

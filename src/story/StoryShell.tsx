@@ -263,23 +263,29 @@ function splitCaptionPages(value: string, maxUnits = 62): string[] {
   return pages
 }
 
-function CivicResultStory({ block, cartridge }: { block: StoryBlock; cartridge: StoryCartridge }) {
+function CivicResultStory({ block, cartridge, onCompletionChange }: { block: StoryBlock; cartridge: StoryCartridge; onCompletionChange: (complete: boolean) => void }) {
   const pages = useMemo(() => splitCaptionPages(block.text, 82), [block.id, block.text])
   const [page, setPage] = useState(0)
   useEffect(() => { setPage(0) }, [block.id])
+  useEffect(() => { onCompletionChange(pages.length <= 1 || page >= pages.length - 1) }, [onCompletionChange, page, pages.length])
   const current = pages[Math.min(page, Math.max(0, pages.length - 1))] ?? block.text
   return <section className={`ct-result-story ct-result-story--${block.kind}`} data-block-id={block.id}>
     <div>
       {block.kind === 'dialogue' && block.speaker && <small>{block.speaker}</small>}
       <p>{current}</p>
     </div>
-    {pages.length > 1 && <button type="button" aria-label={t(cartridge.locale, 'nextCaptionPage')} onClick={() => setPage((currentPage) => (currentPage + 1) % pages.length)}><span>{page + 1}/{pages.length}</span><Icon name="arrow" /></button>}
+    {page < pages.length - 1 && <button type="button" aria-label={t(cartridge.locale, 'nextCaptionPage')} onClick={() => setPage((currentPage) => Math.min(currentPage + 1, pages.length - 1))}><span>{page + 1}/{pages.length}</span><Icon name="arrow" /></button>}
   </section>
 }
 
 function compactBeat(blocks: StoryBlock[], overlayId: string | undefined, uiVariant: UiVariant): StoryBlock[] {
   if (uiVariant === 'civic') {
-    const supportingStory = blocks.find((block) => (block.kind === 'narration' || block.kind === 'dialogue') && block.id !== overlayId)
+    const storyBlocks = blocks.filter((block) => (block.kind === 'narration' || block.kind === 'dialogue') && block.id !== overlayId)
+    const transition = storyBlocks.find((block) => block.data?.transitionAnchor)
+    const consequence = transition ? storyBlocks.find((block) => block.id !== transition.id) : undefined
+    const supportingStory = transition && consequence
+      ? { ...transition, kind: 'narration' as const, text: `${transition.text}\n${consequence.speaker ? `${consequence.speaker}：` : ''}${consequence.text}` }
+      : storyBlocks[0]
     const seen = new Set<string>()
     const candidates = blocks.filter((block) => {
       if (!(block.kind === 'check' || block.kind === 'change' || block.kind === 'summary' || (block.kind === 'event' && !block.id.startsWith('action-')))) return false
@@ -302,13 +308,14 @@ function compactBeat(blocks: StoryBlock[], overlayId: string | undefined, uiVari
   return [narration, ...dialogue, ...outcome].filter((block): block is StoryBlock => Boolean(block))
 }
 
-function CinematicStage({ cartridge, engine, player, previewScene, onReturnLatest, onDecisionReadyChange, uiVariant, turnPhase, lastAction }: {
+function CinematicStage({ cartridge, engine, player, previewScene, onReturnLatest, onDecisionReadyChange, onResultReadyChange, uiVariant, turnPhase, lastAction }: {
   cartridge: StoryCartridge
   engine: ReturnType<typeof useStoryEngine>
   player: PlayerProfile
   previewScene: number | null
   onReturnLatest: () => void
   onDecisionReadyChange: (ready: boolean) => void
+  onResultReadyChange: (ready: boolean) => void
   uiVariant: UiVariant
   turnPhase: TurnPhase
   lastAction: string
@@ -377,6 +384,10 @@ function CinematicStage({ cartridge, engine, player, previewScene, onReturnLates
   const civicResultStory = uiVariant === 'civic' && turnPhase === 'result' && !isPreview
     ? visibleCompact.find((block) => block.kind === 'narration' || block.kind === 'dialogue')
     : undefined
+  useEffect(() => {
+    if (isPreview || turnPhase !== 'result') return
+    if (!civicResultStory) onResultReadyChange(true)
+  }, [civicResultStory, isPreview, onResultReadyChange, turnPhase])
   const civicResultOutcomes = civicResultStory ? visibleCompact.filter((block) => block.id !== civicResultStory.id) : visibleCompact
   const compactCivicBeat = uiVariant === 'civic' && turnPhase === 'result' && !isPreview && !engine.error
     && visibleCompact.length === 1 && visibleCompact[0].kind === 'event' && captionUnitLength(visibleCompact[0].text) <= 82
@@ -402,9 +413,9 @@ function CinematicStage({ cartridge, engine, player, previewScene, onReturnLates
     <article className="ct-stage__beat" ref={beatRef}>
       <header className={isPreview ? 'is-preview' : ''}><div><small>{isPreview ? t(cartridge.locale, 'reviewingScene') : t(cartridge.locale, 'now')}</small><strong>{image?.text ?? engine.save.location}</strong></div>{isPreview && <button type="button" onClick={onReturnLatest}>{t(cartridge.locale, 'returnLatest')}</button>}</header>
       <div className="ct-stage__blocks">
-        {!isPreview && turnPhase === 'decision' && !openingDecision && <div className="ct-stage__decision-context"><small>{t(cartridge.locale, 'currentObjective')}</small><p>{engine.save.objective}</p></div>}
+        {!isPreview && turnPhase === 'decision' && !openingDecision && engine.save.decisionContext && <div className="ct-stage__decision-context"><small>{t(cartridge.locale, 'currentSituation')}</small><p>{engine.save.decisionContext}</p></div>}
         {actionText && !isPreview && uiVariant !== 'civic' && turnPhase !== 'decision' && <div className={`st-message st-message--player${engine.pendingAction ? ' is-pending' : ''}`} data-pending-action><div className="st-message__body"><small>{t(cartridge.locale, 'yourAction')}</small><p>{actionText}</p></div><PlayerAvatar profile={player} locale={cartridge.locale} /></div>}
-        {civicResultStory && <CivicResultStory block={civicResultStory} cartridge={cartridge} />}
+        {civicResultStory && <CivicResultStory key={civicResultStory.id} block={civicResultStory} cartridge={cartridge} onCompletionChange={onResultReadyChange} />}
         {civicResultOutcomes.map((block) => <StoryBlockView block={block} cartridge={cartridge} retryImage={engine.retryImage} player={player} key={block.id} />)}
         {engine.progress && !isPreview && <div className="st-typing"><span><i /><i /><i /></span><p>{engine.progress.label}</p></div>}
         {engine.error && !isPreview && <div className="st-inline-error" data-story-error><p>{engine.error}</p><div>{engine.canRetry && <button onClick={engine.retryAction}>{t(cartridge.locale, 'retryAction')}</button>}{engine.mode === 'remote' && <button onClick={engine.useAigramFallback}>{t(cartridge.locale, 'aigramFallback')}</button>}</div></div>}
@@ -662,6 +673,7 @@ function Game({ cartridge, mode, chatId, onSelect, onLocaleChange, uiVariant }: 
   const [textSize, setTextSizeState] = useState<TextSize>(() => readTextSize())
   const [turnPhase, setTurnPhase] = useState<TurnPhase>('decision')
   const [decisionNarrativeReady, setDecisionNarrativeReady] = useState(false)
+  const [resultNarrativeReady, setResultNarrativeReady] = useState(false)
   const [lastAction, setLastAction] = useState('')
   const submittedScene = useRef(engine.save.scene)
   const previousScene = useRef(engine.save.scene)
@@ -802,6 +814,7 @@ function Game({ cartridge, mode, chatId, onSelect, onLocaleChange, uiVariant }: 
     responseAnchor.current = { from: engine.save.blocks.length }
     submittedScene.current = engine.save.scene
     setLastAction(action)
+    setResultNarrativeReady(false)
     setTurnPhase('resolving')
     audio.cue('action')
     engine.act(action, nextLocale)
@@ -822,14 +835,14 @@ function Game({ cartridge, mode, chatId, onSelect, onLocaleChange, uiVariant }: 
   }, [decisionNarrativeReady, engine.save.choices, engine.busy, engine.save.scene, showResumeLatest, turnPhase])
 
   if (!engine.loaded) return <div className="st-loading" style={setCssTheme(cartridge)}><i /><span>{t(cartridge.locale, 'restoring')}</span></div>
-  if (!engine.save.entered) return <Entry cartridge={cartridge} onEnter={() => { audio.cue('open'); setLastAction(cartridge.opening.entryAction ?? cartridge.copy.enter); setTurnPhase(cartridge.opening.entryAction ? 'result' : 'decision'); engine.enter() }} onSelect={onSelect} mode={engine.mode} setMode={engine.setMode} hasSave={engine.save.scene > 0} remoteAvailable={Boolean(engine.save.remoteChatId)} />
-  const stage = <CinematicStage cartridge={cartridge} engine={engine} player={player} previewScene={previewScene} onReturnLatest={() => setPreviewScene(null)} onDecisionReadyChange={setDecisionNarrativeReady} uiVariant={uiVariant} turnPhase={turnPhase} lastAction={lastAction} />
+  if (!engine.save.entered) return <Entry cartridge={cartridge} onEnter={() => { audio.cue('open'); setLastAction(cartridge.opening.entryAction ?? cartridge.copy.enter); setResultNarrativeReady(false); setTurnPhase(cartridge.opening.entryAction ? 'result' : 'decision'); engine.enter() }} onSelect={onSelect} mode={engine.mode} setMode={engine.setMode} hasSave={engine.save.scene > 0} remoteAvailable={Boolean(engine.save.remoteChatId)} />
+  const stage = <CinematicStage cartridge={cartridge} engine={engine} player={player} previewScene={previewScene} onReturnLatest={() => setPreviewScene(null)} onDecisionReadyChange={setDecisionNarrativeReady} onResultReadyChange={setResultNarrativeReady} uiVariant={uiVariant} turnPhase={turnPhase} lastAction={lastAction} />
   const finaleBlocking = engine.save.finale.status !== 'idle' && !engine.save.finale.epilogueActive
   const controls = finaleBlocking ? null : previewScene != null
     ? <button type="button" className="ct-return-latest" onClick={() => setPreviewScene(null)}>{t(cartridge.locale, 'returnLatest')}<Icon name="arrow" /></button>
     : turnPhase === 'decision'
       ? !decisionNarrativeReady ? null : <Composer cartridge={cartridge} engine={engine} onAct={act} uiVariant={uiVariant} />
-      : turnPhase === 'result' && !engine.error
+      : turnPhase === 'result' && !engine.error && resultNarrativeReady
         ? <button type="button" className={`ct-turn-next ${uiVariant === 'civic' ? 'ct-civic-next' : 'ct-living-next'}`} onClick={() => { setDecisionNarrativeReady(engine.save.scene > 3); setTurnPhase('decision'); setLastAction('') }}><span><small>{t(cartridge.locale, 'resultReady')}</small><strong>{t(cartridge.locale, 'showNextChoices')}</strong></span><Icon name="arrow" /></button>
         : null
   const civicViewportState = previewScene != null ? 'is-preview' : `is-${turnPhase}${engine.error ? ' has-error' : ''}`

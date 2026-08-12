@@ -25,8 +25,9 @@ const DEFAULT_MEDIA_DIRECTOR: StoryMediaDirector = {
   minVideoGapTurns: 6,
 }
 
-type LegacyStorySave = Omit<StorySave, 'version' | 'locale' | 'characters' | 'partyMemberIds' | 'danger' | 'facts' | 'finale'> & {
-  version?: 1 | 2 | 3 | 4 | 5 | 6 | 7
+type LegacyStorySave = Omit<StorySave, 'version' | 'locale' | 'characters' | 'partyMemberIds' | 'danger' | 'facts' | 'finale' | 'decisionContext'> & {
+  version?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+  decisionContext?: string
   locale?: Locale
   characters?: StorySave['characters']
   partyMemberIds?: StorySave['partyMemberIds']
@@ -144,7 +145,8 @@ function normalizeSave(candidate: LegacyStorySave | null | undefined, cartridge:
   })
   const characterState = normalizeCharacterState(repaired, cartridge)
   const normalized = {
-    ...repaired, ...characterState, version: 7, locale: repaired.locale ?? cartridge.locale,
+    ...repaired, ...characterState, version: 8, locale: repaired.locale ?? cartridge.locale,
+    decisionContext: repaired.decisionContext ?? repaired.objective ?? cartridge.opening.objective,
     remoteChatId: incomingChatId || repaired.remoteChatId, blocks, inventory, map,
     facts: normalizeFacts(repaired.facts, cartridge.initialFacts),
     finale: repaired.finale?.ending

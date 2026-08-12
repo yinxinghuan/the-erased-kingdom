@@ -245,6 +245,7 @@ function build(locale: Locale): StoryCartridge {
     itemImageDirection: 'museum-quality grounded high-fantasy artifact study on dark cloth and pale registry paper, restrained brass and vermilion details, object only, no people, no readable text',
     sceneImageDirection: 'cinematic grounded high fantasy under spatial erasure, broad readable landscapes, lived-in medieval clothing, natural anatomy, saturated tactile places interrupted by silent ivory absence, cobalt action accents, vermilion deletion traces, 4:5 portrait master, one decisive event',
     sceneImageAvoid: 'the Apple Vale entry composition, a courier merely standing before a fading orchard village, decorative paper collage, giant book foreground, title lettering, border frame, or UI',
+    transitionAnchor: s('玛拉随身携带、会记录更正痕迹的边境图册', 'Mara’s portable border atlas that preserves every correction'),
     playerImageAliases: ['border courier', 'royal courier', 'the courier', 'courier', '边境信使', '皇家信使', '信使'],
     playerImageRole: 'the unnamed player-controlled border courier; the supplied reference is authoritative for the courier’s entire visible form, covering, costume and face visibility, while the blank brass seal and courier satchel are story props; this subject is never Mara and never a mounted knight',
     playerImageExclusions: [

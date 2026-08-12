@@ -4,6 +4,7 @@ import { chooseSceneImage } from './imageDirector'
 import { createInitialDangerState, normalizeDangerState, settleDangerTurn } from './dangerDirector'
 import { canStartTrueEnding } from './endingDirector'
 import { applyDomainResolution, domainAllowsModelCommand, resolveDomainAction, syncDomainDerivedState } from './domainRules'
+import { choicesAreGrounded, createTransitionBlock, shortDecisionContext } from './continuity'
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
@@ -12,8 +13,9 @@ function clamp(value: number, min: number, max: number): number {
 export function createInitialSave(cartridge: StoryCartridge, remoteChatId?: string): StorySave {
   const initialPartyMemberIds = cartridge.initialPartyMemberIds ?? cartridge.characters.filter((character) => character.initialStatus === 'companion').map((character) => character.id)
   const initial: StorySave = {
-    version: 7, cartridgeId: cartridge.id, locale: cartridge.locale, remoteChatId, entered: false, scene: 0,
+    version: 8, cartridgeId: cartridge.id, locale: cartridge.locale, remoteChatId, entered: false, scene: 0,
     location: cartridge.opening.location, time: cartridge.opening.time, objective: cartridge.opening.objective,
+    decisionContext: cartridge.opening.objective,
     stats: Object.fromEntries(cartridge.statDefinitions.map((stat) => [stat.id, stat.initial])),
     blocks: [...cartridge.opening.blocks, createImageBlock('image-0', cartridge.opening.location, cartridge.opening.imagePrompt, 'idle', '', {
       source: 'opening', reason: 'opening-crisis', promptVersion: String(SCENE_IMAGE_PROMPT_VERSION), playerVisible: 'true',
@@ -350,9 +352,15 @@ export function applyParsedScene(
   dangerDirective?: DangerDirective,
   domainResolution?: DomainActionResolution,
 ): StorySave {
+  const commandDestination = parsed.commands.find((command) => command.type === 'map_update')
+  const domainMap = domainResolution?.status === 'accepted' ? domainResolution.effects.find((effect) => effect.type === 'map') : undefined
+  const domainDestination = domainMap?.type === 'map'
+    ? (save.map.find((node) => node.id === domainMap.nodeId)?.label ?? cartridge.initialMap.find((node) => node.id === domainMap.nodeId)?.label)
+    : undefined
+  const transition = createTransitionBlock(save, commandDestination?.type === 'map_update' ? commandDestination.location : domainDestination, cartridge)
   const next: StorySave = {
     ...save, locale: cartridge.locale, scene: save.scene + 1,
-    blocks: [...save.blocks, { id: `action-${save.scene + 1}`, kind: 'event', text: actionId }, ...parsed.blocks],
+    blocks: [...save.blocks, { id: `action-${save.scene + 1}`, kind: 'event', text: actionId }, ...(transition ? [transition] : []), ...parsed.blocks],
     choices: [], relationships: [...save.relationships],
     map: save.map.map((node) => ({ ...node })), inventory: save.inventory.map((item) => ({ ...item })),
     characters: save.characters.map((character) => ({ ...character, skills: character.skills.map((skill) => ({ ...skill })) })),
@@ -362,6 +370,10 @@ export function applyParsedScene(
     danger: normalizeDangerState(save.danger),
     sessionEnded: false, finale: save.finale.status === 'complete' ? save.finale : { status: 'idle' }, lastActionId: actionId,
   }
+  const visibleTurnText = parsed.blocks
+    .filter((block) => block.kind === 'narration' || block.kind === 'dialogue')
+    .map((block) => block.text.trim()).filter(Boolean).join(' ')
+  if (visibleTurnText) next.decisionContext = shortDecisionContext(visibleTurnText, cartridge.locale)
   const effects: StoryBlock[] = []
   const confirmedFacts: Array<{ id: string; value: string }> = []
   let dangerCheckAdded = false
@@ -493,7 +505,10 @@ export function applyParsedScene(
     })
   }
   if (domainResolution?.status !== 'rejected') effects.push(...settleDangerTurn(save, next, adjudicatedParsed, cartridge, dangerDirective))
-  effects.push(...applyDomainResolution(next, cartridge, domainResolution))
+  const domainBlocks = applyDomainResolution(next, cartridge, domainResolution)
+  effects.push(...domainBlocks)
+  const domainContext = [...domainBlocks].reverse().find((block) => block.kind === 'narration' || block.kind === 'event')?.text
+  if (domainContext) next.decisionContext = shortDecisionContext(domainContext, cartridge.locale)
   next.facts = deriveCampaignFacts(next.facts)
 
   if (trueEndingReason && next.finale.status !== 'complete' && canStartTrueEnding(next, cartridge)) {
@@ -506,6 +521,7 @@ export function applyParsedScene(
   // Ordinary scenes must remain playable even when an AI response omits or
   // truncates its machine-readable choices. A real checkpoint may still use
   // the dedicated resume action supplied by the Composer.
+  if (!next.sessionEnded && next.choices.length >= 2 && !choicesAreGrounded(next.choices, { ...next, choices: save.choices, blocks: [...next.blocks, ...effects] }, cartridge)) next.choices = []
   if (!next.sessionEnded && next.choices.length < 2) next.choices = createRecoveryChoices(next, cartridge)
 
   const image = chooseSceneImage(save, next, adjudicatedParsed, cartridge, imagePrompt, imageSubject, actionId)
