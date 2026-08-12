@@ -30,7 +30,7 @@ const _urlTelegramId = _params.get('telegram_id');
 
 function storedWebUserId(): string | null {
   try {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = alteruLocalStorage.getItem(USER_KEY);
     if (!raw) return null;
     const user = JSON.parse(raw) as {
       telegram_id?: string | number;

@@ -45,7 +45,7 @@ export interface StatDefinition {
 }
 export interface SkillDefinition { id: string; label: string; value: number }
 export type CharacterStatus = 'known' | 'companion' | 'departed'
-export interface CharacterDefinition { id: string; name: string; role: string; vitality: number; stress: number; skills: SkillDefinition[]; detail?: string; lore?: string; initialStatus?: CharacterStatus }
+export interface CharacterDefinition { id: string; name: string; role: string; vitality: number; stress: number; skills: SkillDefinition[]; detail?: string; lore?: string; initialStatus?: CharacterStatus; hiddenUntilIntroduced?: boolean }
 export interface StoryCharacter extends CharacterDefinition {
   status: CharacterStatus
   origin: 'cartridge' | 'generated'
@@ -62,7 +62,7 @@ export const SCENE_IMAGE_PROMPT_VERSION = 8
 export const PLAYER_IMAGE_REFERENCE_VERSION = 2
 export type SceneImageSubject = 'player' | 'environment' | 'others'
 export interface StoryBlock { id: string; kind: 'narration' | 'dialogue' | 'check' | 'change' | 'event' | 'summary' | 'image'; text: string; speaker?: string; tone?: string; data?: Record<string, string | number> }
-export interface EntityMetric { label: string; value: string }
+export interface EntityMetric { id?: string; label: string; value: string }
 export interface MapNode { id: string; label: string; connectedTo?: string; current?: boolean; visited?: boolean; detail?: string; lore?: string; facts?: string[] }
 export interface InventoryItem {
   id: string
@@ -226,6 +226,65 @@ export interface StoryDangerState {
   lastResolvedScene?: number
 }
 
+export type DomainRequirement =
+  | { type: 'map'; nodeId: string; reason: string }
+  | { type: 'fact'; id: string; equals?: StoryFactValue; notEquals?: StoryFactValue; min?: number; max?: number; reason: string }
+  | { type: 'item'; id: string; minCount: number; reason: string }
+  | { type: 'character'; id: string; status: CharacterStatus; reason: string }
+  | { type: 'danger'; phases: DangerPhase[]; reason: string }
+
+export type DomainEffect =
+  | { type: 'stat'; id: string; delta: number }
+  | { type: 'fact'; id: string; value: StoryFactValue }
+  | { type: 'fact-add'; id: string; delta: number }
+  | { type: 'inventory'; action: 'add' | 'remove'; itemId: string; count: number; item?: InventoryItem }
+  | { type: 'party'; change: 'add' | 'remove'; characterId: string }
+  | { type: 'map'; nodeId: string }
+  | { type: 'danger'; outcome: Exclude<DangerOutcome, 'none'> }
+  | { type: 'objective'; value: string }
+  | { type: 'clock'; value: string }
+  | { type: 'session'; ended: boolean; reason?: string }
+
+export interface DomainActionRule {
+  id: string
+  intent: string
+  match: string[]
+  requirements: DomainRequirement[]
+  effects: DomainEffect[]
+  successText: string
+  successChoices: [string, string, string]
+  rejectionChoices?: [string, string, string]
+}
+
+export interface DomainDerivedItemMetric {
+  itemId: string
+  metricId: string
+  label: string
+  factId: string
+  maximum: number
+  mode: 'remaining-from-used'
+}
+
+export type DomainDerivedFact =
+  | { factId: string; mode: 'owned-item-count'; itemIds: string[] }
+  | { factId: string; mode: 'owned-item-threshold'; itemIds: string[]; threshold: number }
+
+export interface StoryDomainRules {
+  rules: DomainActionRule[]
+  derivedItemMetrics?: DomainDerivedItemMetric[]
+  derivedFacts?: DomainDerivedFact[]
+}
+
+export interface DomainActionResolution {
+  status: 'accepted' | 'rejected'
+  ruleId: string
+  intent: string
+  effects: DomainEffect[]
+  reasons: string[]
+  successText: string
+  successChoices: [string, string, string]
+}
+
 export interface DangerCheck {
   skill: string
   dc: number
@@ -290,6 +349,7 @@ export interface StoryCartridge {
   mediaDirector?: StoryMediaDirector
   director?: StoryDirector
   dangerDirector?: StoryDangerDirector
+  domainRules?: StoryDomainRules
   endingDirector?: StoryEndingDirector
   initialFacts?: Record<string, StoryFactValue>
   statDefinitions: [StatDefinition, StatDefinition, StatDefinition]
@@ -360,6 +420,7 @@ export interface AdapterContext {
   actionId: string
   locale: Locale
   dangerDirective?: DangerDirective
+  domainResolution?: DomainActionResolution
 }
 
 export interface AdapterProgress {

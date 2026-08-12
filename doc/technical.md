@@ -20,7 +20,9 @@ src/story/
     theErasedKingdom.ts          # 世界规则、八章导演、人物、序章和结局锚点
     theErasedKingdomCampaign.ts  # 31 回合中英文完整压缩战役
   engine/
-    protocol.ts                  # AI 文本协议解析
+    domainRules.ts               # 领域意图、前置条件、原子 effects 与派生状态
+    protocol.ts                  # AI 文本协议解析与不完整图片元数据清理
+    stageNarrative.ts            # 条件情境字幕与冗余选择提示过滤
     reducer.ts                   # 权威状态变更、事实写入与见证页推导
     dangerDirector.ts            # warning → confrontation → resolution
     endingDirector.ts            # 终局能力、快照、验证、回退与确定性 ID
@@ -57,6 +59,10 @@ _qa/
 ### 状态管理与回合
 
 `useStoryEngine.ts` 持有 `StorySave v7`。每次行动先产生本地即时反馈，再由 adapter 返回叙事协议；`reducer.ts` 统一写入地点、时间、目标、数值、物品、伙伴、关系、事实、危险和媒体块。AI 不直接拥有或修改存档。
+
+被治理行动在危险调度前由 `resolveDomainAction()` 判定。若规则命中，adapter 只生成裁判结果的自然叙述；`applyParsedScene()` 丢弃该回合模型提供的全部协议命令，再一次性提交本地 effects 和本地三选项。拒绝不消耗物品、不改变数值/事实/地点，也不推进危险 cadence。当前治理苹果谷三项首次抢救与三项互斥地标写回。
+
+未来固定人物使用 `hiddenUntilIntroduced`。`createInitialSave()` 不预载奥伦、塞拉、伊莱和维尔；可见正文合法介绍后，稳定 `character_update` 才从 cartridge 定义创建。`normalizeCharacterState()` 只清理从未真正出现的旧存档预载，已经在正文、队伍或关系中留下证据的人物继续保留。
 
 浏览器侧持久化通过 `public/alteru-storage-scope.js` 在游戏模块加载前安装的 `alteruLocalStorage` / `alteruSessionStorage` 访问，真实 key 统一加上 `alteru:<当前部署 UUID>:` 前缀。自托管、GitHub Pages 和 Remix 因而不会在共享 origin 上串用剧情存档、语言、字号或音频偏好；旧的未加前缀 key 只由明确的兼容读取路径处理。
 
@@ -105,12 +111,13 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 ## 4. 扩展点
 
 - 改世界观、人物、开场、区域、物品或 Demo：编辑 `src/story/cartridges/theErasedKingdom.ts`。
+- 新增有限王印次数、互斥写回、一次性救援、消耗或入队条件：在 cartridge 的 `domainRules` 中声明完整事务，并同步 `npm run test:domain`；不要依赖 demo 内容或 prompt 中的命令充当裁判。
 - 改完整压缩战役的中英文节点：编辑 `src/story/cartridges/theErasedKingdomCampaign.ts`；增删节点后同步 `_qa/full-campaign.ts` 与浏览器终章路线。
 - 改正式长篇主线骨架：编辑 cartridge 的 `director.chapters`，不要只改 prompt；每章必须保留完成事实和可见必经节拍。
 - 扩展新地区时复用古林合同：每个本地人物显式传 `character_id`，每件可获得物品显式传 `item_id`，并为地区结算写入见证页、结算事实、地图后果和三项具体下一步；对应跨区测试放入 `_qa/`。
 - 调数值、危险频率、DC 与代价：编辑同文件的 `statDefinitions` / `dangerDirector`，引擎一般无需修改。
 - 新增终局能力或质量锚点：修改 cartridge 的 `endingDirector`，并同步 `doc/ending-grammar.json`；新能力必须声明获取条件、强制代价和互斥项。
-- 改 Civic 布局与视觉：编辑 `StoryShell.tsx`、`story.less` 与 `doc/visual.md`；Living 分支仍保留，不能直接删除。
+- 改 Civic 布局与视觉：编辑 `StoryShell.tsx`、`story.less` 与 `doc/visual.md`；改字幕价值判断编辑 `engine/stageNarrative.ts` 并运行 `npm run test:stage-narrative`；Living 分支仍保留，不能直接删除。
 - 替换入口画面：替换 `src/story/img/worlds/the-erased-kingdom*.webp`，保持入口 4:5、无 UI、无可读文字。
 - 改玩家出镜别名或生图身份规则：编辑 cartridge 的 `playerImageAliases`、`engine/imageDirector.ts` 与 `useStoryEngine.ts`；新增玩家职业称谓时必须同步回归测试。
 - 改媒体服务合同：编辑 `src/shared/runtime/media.ts`；临时回滚旧图片链路：在 URL 增加 `media_backend=legacy`。图片内容、头像归属与媒体传输层保持分离。

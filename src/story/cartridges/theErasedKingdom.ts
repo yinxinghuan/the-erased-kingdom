@@ -1,6 +1,6 @@
 import type {
   Locale, StoryCartridge, StoryDangerDirector, StoryEndingAnchor, StoryEndingCapability,
-  StoryEndingDirector, StoryImageDirector,
+  StoryDomainRules, StoryEndingDirector, StoryImageDirector,
 } from '../types'
 import { buildErasedKingdomCampaign } from './theErasedKingdomCampaign'
 
@@ -10,6 +10,51 @@ const entryImage = new URL('../img/worlds/the-erased-kingdom-entry.webp', import
 function build(locale: Locale): StoryCartridge {
   const zh = locale === 'zh'
   const s = (cn: string, en: string) => zh ? cn : en
+
+  const domainRules: StoryDomainRules = {
+    rules: [
+      {
+        id: 'rescue-mara', intent: 'rescue-mara', match: zh ? ['拉住正在褪色的玛拉', '拉住玛拉'] : ['hold on to the fading Mara', 'hold Mara'],
+        requirements: [{ type: 'fact', id: 'first-rescue', equals: 'unset', reason: s('你已经完成苹果谷的第一次抢救，不能静默领取另一个开局结果。', 'Apple Vale’s first rescue is already committed; another opening result cannot be claimed silently.') }],
+        effects: [{ type: 'party', change: 'add', characterId: 'mara-cartographer' }, { type: 'fact', id: 'first-rescue', value: 'mara' }, { type: 'stat', id: 'recognition', delta: 6 }, { type: 'objective', value: s('选择苹果谷第一个安全地标', 'Choose Apple Vale’s first safe landmark') }],
+        successText: s('你抓住玛拉与她母亲的量尺，把她从空白边缘拉回；她明确选择与你同行。被记得 +6。', 'You pull Mara and her mother’s ruler back from the ivory edge; she explicitly chooses to join you. Recognition +6.'),
+        successChoices: zh ? ['写回桥梁，保住离村道路', '写回面包房，保住补给和村民', '写回钟楼，获得危险预警'] : ['Restore the bridge and keep an escape road', 'Restore the bakery and save supplies', 'Restore the bell tower for warning'],
+        rejectionChoices: zh ? ['检查苹果谷正在消失的地标', '询问玛拉哪处仍有见证', '保存书记桌上的登记页'] : ['Inspect Apple Vale’s fading landmarks', 'Ask Mara which landmark still has witnesses', 'Save the registry page from the desk'],
+      },
+      {
+        id: 'rescue-registry-page', intent: 'rescue-registry-page', match: zh ? ['抢救书记桌上的登记页', '保存书记桌上的登记页'] : ['rescue the registry page', 'save the registry page'],
+        requirements: [{ type: 'fact', id: 'first-rescue', equals: 'unset', reason: s('你已经完成苹果谷的第一次抢救，不能重复领取另一项开局收益。', 'Apple Vale’s first rescue is already committed; another opening reward cannot resolve.') }],
+        effects: [
+          { type: 'fact', id: 'first-rescue', value: 'registry-page' },
+          { type: 'fact', id: 'apple-page-saved', value: true },
+          { type: 'inventory', action: 'add', itemId: 'apple-registry-fragment', count: 1, item: { id: 'apple-registry-fragment', label: s('苹果谷登记残页', 'Apple Vale Registry Fragment'), count: 1, rarity: 'rare', detail: s('被朱红线划掉的原始村庄登记页，保住了收成与桥梁账的一角。', 'A vermilion-crossed village registry page preserving part of the harvest and bridge account.'), effect: s('证明苹果谷曾被皇家总册正式承认；单独不足以永久恢复村庄。', 'Proves Apple Vale was recognized by the royal Ledger, but cannot restore the village alone.'), lore: s('村书记在消失前用墨迹按住了最后一行普通生活记录。', 'Before vanishing, the clerk held down one final line of ordinary life in ink.') } },
+        ],
+        successText: s('你用空白王印压住正在透明的登记页，保住一角收成与桥梁账；它进入信使包，但不会凭空恢复整座村庄。', 'You pin the fading registry page with the blank seal, preserving part of its harvest and bridge account. It enters your courier bag but cannot restore the village by itself.'),
+        successChoices: zh ? ['写回桥梁，保住离村道路', '写回面包房，保住补给和村民', '写回钟楼，获得危险预警'] : ['Restore the bridge and keep an escape road', 'Restore the bakery and save supplies', 'Restore the bell tower for warning'],
+        rejectionChoices: zh ? ['检查已保存的登记残页', '询问玛拉哪处仍有见证', '选择一处安全地标'] : ['Inspect the saved registry fragment', 'Ask Mara which landmark still has witnesses', 'Choose one safe landmark'],
+      },
+      {
+        id: 'witness-bridge', intent: 'witness-bridge', match: zh ? ['冲到桥头阻止道路消失', '冲到桥头'] : ['run to keep the bridge road from vanishing', 'run to the bridge'],
+        requirements: [{ type: 'fact', id: 'first-rescue', equals: 'unset', reason: s('你已经完成苹果谷的第一次抢救，不能重复领取另一项开局收益。', 'Apple Vale’s first rescue is already committed; another opening reward cannot resolve.') }],
+        effects: [{ type: 'fact', id: 'first-rescue', value: 'bridge' }, { type: 'fact', id: 'bridge-length-witnessed', value: true }, { type: 'stat', id: 'vitality', delta: -5 }],
+        successText: s('你踏上最后一块有颜色的桥石；玛拉的量尺、脚步与水流共同证明桥长三十七米四。体力 -5。', 'You step onto the last colored bridge stone; Mara’s ruler, your footsteps, and the river jointly prove its 37.4-meter span. Vitality -5.'),
+        successChoices: zh ? ['写回桥梁，保住离村道路', '写回面包房，保住补给和村民', '写回钟楼，获得危险预警'] : ['Restore the bridge and keep an escape road', 'Restore the bakery and save supplies', 'Restore the bell tower for warning'],
+        rejectionChoices: zh ? ['检查已经留下的桥梁证据', '询问玛拉哪处仍有见证', '选择一处安全地标'] : ['Inspect the bridge evidence already preserved', 'Ask Mara which landmark still has witnesses', 'Choose one safe landmark'],
+      },
+      ...([
+        ['bridge', '写回桥梁，保住离村道路', 'Restore the bridge and keep an escape road', -1, 0],
+        ['bakery', '写回面包房，保住补给和村民', 'Restore the bakery and save supplies', 3, 0],
+        ['bell-tower', '写回钟楼，获得危险预警', 'Restore the bell tower for warning', 0, 8],
+      ] as const).map(([anchor, cn, en, supplies, recognition]) => ({
+        id: `restore-apple-${anchor}`, intent: `restore-apple-${anchor}`, match: [cn, en],
+        requirements: [{ type: 'fact' as const, id: 'apple-anchor', equals: 'unset', reason: s('苹果谷已经选择过第一处写回地标，不能静默改写同一章的承诺。', 'Apple Vale already chose its first restored landmark; that chapter commitment cannot be silently rewritten.') }],
+        effects: [{ type: 'fact' as const, id: 'apple-anchor', value: anchor }, ...(supplies ? [{ type: 'stat' as const, id: 'supplies', delta: supplies }] : []), ...(recognition ? [{ type: 'stat' as const, id: 'recognition', delta: recognition }] : []), { type: 'clock' as const, value: s('修订前第 9 天 · 18:42', 'Nine days before Revision · 18:42') }],
+        successText: anchor === 'bridge' ? s('王印只写回石桥，保住撤离道路；补给 -1。这个承诺不会被后续模型改成另一处。', 'The seal restores only the stone bridge and preserves evacuation; Supplies -1. Later narration cannot switch the commitment.') : anchor === 'bakery' ? s('王印只写回面包房，炉火与村民补给一同回来；补给 +3。', 'The seal restores only the bakery; its ovens and village supplies return. Supplies +3.') : s('王印只写回山坡钟楼，警报覆盖正在褪色的村庄；被记得 +8。', 'The seal restores only the hill bell, carrying warning across the fading village. Recognition +8.'),
+        successChoices: (zh ? ['保护正在撤离的村民', '观察总册猎兽如何追踪王印', '与玛拉准备一条假路'] : ['Protect the evacuating villagers', 'Study how the Ledger beast tracks the seal', 'Prepare a false road with Mara']) as [string, string, string],
+        rejectionChoices: (zh ? ['查看已写回地标的当前状态', '带玛拉组织村民撤离', '准备应对王印引来的危险'] : ['Check the restored landmark’s current state', 'Help Mara organize evacuation', 'Prepare for the danger following the seal']) as [string, string, string],
+      })),
+    ],
+  }
 
   const capabilities: StoryEndingCapability[] = [
     {
@@ -293,10 +338,11 @@ function build(locale: Locale): StoryCartridge {
       ],
     },
     dangerDirector,
+    domainRules,
     endingDirector,
     initialFacts: {
       'player-unregistered': true, 'blank-seal-owned': true, 'no-false-evidence': true,
-      'witness-pages': 0, 'ledger-access': false, 'apple-vale-erasure-confirmed': true,
+      'witness-pages': 0, 'ledger-access': false, 'apple-vale-erasure-confirmed': true, 'first-rescue': 'unset', 'apple-anchor': 'unset',
     },
     statDefinitions: [
       { id: 'vitality', label: s('体力', 'Vitality'), min: 0, max: 100, initial: 82, inverse: true, display: 'bar', warningAt: 30, dangerAt: 0, maxDelta: 22 },
@@ -321,10 +367,10 @@ function build(locale: Locale): StoryCartridge {
     },
     characters: [
       { id: 'mara-cartographer', name: s('玛拉', 'Mara'), role: s('苹果谷制图学徒', 'Apple Vale cartographer'), vitality: 74, stress: 48, initialStatus: 'known', skills: [{ id: 'mapping', label: s('制图', 'Mapping'), value: 4 }, { id: 'witness', label: s('作证', 'Witnessing'), value: 3 }], detail: s('紧握母亲的旧量尺，拒绝让家乡变成昨天不存在的地方。', 'She grips her mother’s old ruler and refuses to let home become a place that never existed.'), lore: s('她将逐渐明白，记住家乡不等于把所有人恢复成离开前的样子。', 'She will learn that remembering home is not the same as restoring everyone to who they were before.') },
-      { id: 'oren-knight', name: s('奥伦', 'Oren'), role: s('皇家骑士', 'Royal knight'), vitality: 92, stress: 24, initialStatus: 'known', skills: [{ id: 'guard', label: s('守护', 'Guarding'), value: 4 }, { id: 'command', label: s('统率', 'Command'), value: 3 }], detail: s('正在循王印痕迹赶来。他相信自己是在阻止第二次灾难。', 'He is following the seal’s trace and believes he is preventing a second catastrophe.'), lore: s('他的忠诚会记录玩家是否伤害士兵、保护平民与伪造事实。', 'His loyalty remembers whether the player harms soldiers, protects civilians or falsifies evidence.') },
-      { id: 'sera-peddler', name: s('塞拉', 'Sera'), role: s('被删物品商人', 'Dealer in erased objects'), vitality: 70, stress: 33, initialStatus: 'known', skills: [{ id: 'provenance', label: s('溯源', 'Provenance'), value: 4 }, { id: 'trade', label: s('交易', 'Trade'), value: 4 }], detail: s('在钟市保存无主物品的来历，并把保管与占有分得很清楚。', 'In Bell Market she preserves the provenance of ownerless things and distinguishes custody from possession.'), lore: s('她能让背包里的每件物品成为一个世界故事，而不是无来源的拾取列表。', 'She turns every item into world history rather than an ownerless pickup list.') },
-      { id: 'eli-courier', name: s('伊莱', 'Eli'), role: s('被删去的皇家信使', 'Erased royal courier'), vitality: 61, stress: 65, initialStatus: 'known', skills: [{ id: 'routes', label: s('秘路', 'Hidden routes'), value: 5 }, { id: 'letters', label: s('信使誓言', 'Courier oath'), value: 4 }], detail: s('玩家失踪多年的导师，也是把王印藏进最后一封信的人。', 'The player’s long-missing mentor, who hid the seal inside the last letter.'), lore: s('他为了保护玩家，未经同意删去了玩家的正式登记。', 'To protect the player, he erased their registration without consent.') },
-      { id: 'veyr-regent', name: s('维尔', 'Veyr'), role: s('白石摄政官', 'Regent of Whitestone'), vitality: 66, stress: 76, initialStatus: 'known', skills: [{ id: 'ledger', label: s('总册', 'Ledgercraft'), value: 5 }, { id: 'resolve', label: s('决断', 'Resolve'), value: 5 }], detail: s('关闭地方见证，只允许一个版本的现实存在。', 'He shut down local witnessing and permits only one version of reality.'), lore: s('他曾在两段同样真实的历史里失去女儿诺娅，因此恐惧并非虚构，权力却越过了所有人的选择。', 'He lost his daughter Noa across two equally real histories. His fear is genuine; his power denies everyone else a choice.') },
+      { id: 'oren-knight', name: s('奥伦', 'Oren'), role: s('皇家骑士', 'Royal knight'), vitality: 92, stress: 24, initialStatus: 'known', hiddenUntilIntroduced: true, skills: [{ id: 'guard', label: s('守护', 'Guarding'), value: 4 }, { id: 'command', label: s('统率', 'Command'), value: 3 }], detail: s('正在循王印痕迹赶来。他相信自己是在阻止第二次灾难。', 'He is following the seal’s trace and believes he is preventing a second catastrophe.'), lore: s('他的忠诚会记录玩家是否伤害士兵、保护平民与伪造事实。', 'His loyalty remembers whether the player harms soldiers, protects civilians or falsifies evidence.') },
+      { id: 'sera-peddler', name: s('塞拉', 'Sera'), role: s('被删物品商人', 'Dealer in erased objects'), vitality: 70, stress: 33, initialStatus: 'known', hiddenUntilIntroduced: true, skills: [{ id: 'provenance', label: s('溯源', 'Provenance'), value: 4 }, { id: 'trade', label: s('交易', 'Trade'), value: 4 }], detail: s('在钟市保存无主物品的来历，并把保管与占有分得很清楚。', 'In Bell Market she preserves the provenance of ownerless things and distinguishes custody from possession.'), lore: s('她能让背包里的每件物品成为一个世界故事，而不是无来源的拾取列表。', 'She turns every item into world history rather than an ownerless pickup list.') },
+      { id: 'eli-courier', name: s('伊莱', 'Eli'), role: s('被删去的皇家信使', 'Erased royal courier'), vitality: 61, stress: 65, initialStatus: 'known', hiddenUntilIntroduced: true, skills: [{ id: 'routes', label: s('秘路', 'Hidden routes'), value: 5 }, { id: 'letters', label: s('信使誓言', 'Courier oath'), value: 4 }], detail: s('玩家失踪多年的导师，也是把王印藏进最后一封信的人。', 'The player’s long-missing mentor, who hid the seal inside the last letter.'), lore: s('他为了保护玩家，未经同意删去了玩家的正式登记。', 'To protect the player, he erased their registration without consent.') },
+      { id: 'veyr-regent', name: s('维尔', 'Veyr'), role: s('白石摄政官', 'Regent of Whitestone'), vitality: 66, stress: 76, initialStatus: 'known', hiddenUntilIntroduced: true, skills: [{ id: 'ledger', label: s('总册', 'Ledgercraft'), value: 5 }, { id: 'resolve', label: s('决断', 'Resolve'), value: 5 }], detail: s('关闭地方见证，只允许一个版本的现实存在。', 'He shut down local witnessing and permits only one version of reality.'), lore: s('他曾在两段同样真实的历史里失去女儿诺娅，因此恐惧并非虚构，权力却越过了所有人的选择。', 'He lost his daughter Noa across two equally real histories. His fear is genuine; his power denies everyone else a choice.') },
     ],
     initialMap: [
       { id: 'apple-vale', label: s('苹果谷', 'Apple Vale'), current: true, visited: true, detail: s('果园村庄正在从道路、记忆与远处房屋开始褪色。', 'An orchard village fading first from roads, memory and distant buildings.'), lore: s('一个普通村庄的生活，正是它值得存在的证据。', 'Its ordinary life is precisely why it deserves to exist.'), facts: [s('玛拉仍记得村庄', 'Mara still remembers it'), s('空白王印已被发现', 'The blank seal has been found')] },

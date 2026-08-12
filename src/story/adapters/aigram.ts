@@ -3,6 +3,7 @@ import { t } from '../i18n'
 import { extractSceneImagePrompt, extractSceneImageSubject } from '../engine/protocol'
 import { buildWorldContext, partyContinuityContract, storyDirectorContract } from '../engine/worldContext'
 import { dangerDirectiveContract } from '../engine/dangerDirector'
+import { domainDirectiveContract } from '../engine/domainRules'
 
 const endpoint = 'https://chat.aiwaves.tech/aigram/api/game-chat'
 
@@ -28,6 +29,7 @@ The three suggested choices should cover these distinct intents when the situati
 Keep at most ${director.maxActiveThreads} unresolved threads prominent; older threads remain in history but should not all compete for attention.
 The player may attempt any plausible in-world action, even if it was not one of your choices. Judge it from the world state instead of refusing or forcing the previous route.` : ''
   const dangerContract = dangerDirectiveContract(context.dangerDirective)
+  const domainContract = domainDirectiveContract(context.domainResolution)
 
   return `You are the stateful game master for an ongoing AlterU story. The JSON state in each user message is authoritative. Continue from it; never restart the premise, repeat the previous response, or claim progress without causing a new concrete situation.
 
@@ -44,6 +46,7 @@ ${directorContract}
 ${partyContinuityContract}
 ${storyDirectorContract(context.cartridge.director)}
 ${dangerContract}
+${domainContract}
 
 Allowed protocol commands, each on its own line:
 [choices: "Choice one"|"Choice two"|"Choice three"]

@@ -1,8 +1,9 @@
-import { SCENE_IMAGE_PROMPT_VERSION, type CharacterDefinition, type DangerDirective, type ImageBlockStatus, type ParsedCommand, type ParsedScene, type SceneImageSubject, type StoryBlock, type StoryCartridge, type StoryCharacter, type StorySave, type VideoBlockStatus } from '../types'
+import { SCENE_IMAGE_PROMPT_VERSION, type CharacterDefinition, type DangerDirective, type DomainActionResolution, type ImageBlockStatus, type ParsedCommand, type ParsedScene, type SceneImageSubject, type StoryBlock, type StoryCartridge, type StoryCharacter, type StorySave, type VideoBlockStatus } from '../types'
 import { t } from '../i18n'
 import { chooseSceneImage } from './imageDirector'
 import { createInitialDangerState, normalizeDangerState, settleDangerTurn } from './dangerDirector'
 import { canStartTrueEnding } from './endingDirector'
+import { applyDomainResolution, domainAllowsModelCommand, syncDomainDerivedState } from './domainRules'
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
@@ -10,7 +11,7 @@ function clamp(value: number, min: number, max: number): number {
 
 export function createInitialSave(cartridge: StoryCartridge, remoteChatId?: string): StorySave {
   const initialPartyMemberIds = cartridge.initialPartyMemberIds ?? cartridge.characters.filter((character) => character.initialStatus === 'companion').map((character) => character.id)
-  return {
+  const initial: StorySave = {
     version: 7, cartridgeId: cartridge.id, locale: cartridge.locale, remoteChatId, entered: false, scene: 0,
     location: cartridge.opening.location, time: cartridge.opening.time, objective: cartridge.opening.objective,
     stats: Object.fromEntries(cartridge.statDefinitions.map((stat) => [stat.id, stat.initial])),
@@ -19,7 +20,7 @@ export function createInitialSave(cartridge: StoryCartridge, remoteChatId?: stri
     })],
     choices: cartridge.opening.choices, map: cartridge.initialMap.map((node) => ({ ...node, visited: node.visited ?? Boolean(node.current), facts: node.facts ? [...node.facts] : undefined })),
     inventory: cartridge.initialInventory.map((item) => ({ ...item, metrics: item.metrics?.map((metric) => ({ ...metric })), imageStatus: item.imageUrl ? 'ready' : 'idle' })),
-    characters: cartridge.characters.map((character) => {
+    characters: cartridge.characters.filter((character) => !character.hiddenUntilIntroduced).map((character) => {
       const state = characterFromDefinition(character)
       if (initialPartyMemberIds.includes(state.id)) state.status = 'companion'
       return state
@@ -31,6 +32,7 @@ export function createInitialSave(cartridge: StoryCartridge, remoteChatId?: stri
     sessionEnded: false,
     finale: { status: 'idle' },
   }
+  return syncDomainDerivedState(initial, cartridge)
 }
 
 type CharacterCommand = Extract<ParsedCommand, { type: 'character_update' | 'party_change' }>
@@ -63,16 +65,18 @@ function resolveCharacter(save: StorySave, command: CharacterCommand, index: num
     existing.updatedAtScene = save.scene
     return existing
   }
+  const definition = command.characterId ? cartridge.characters.find((character) => character.id === command.characterId) : undefined
   const created: StoryCharacter = {
+    ...definition,
     id: command.characterId ?? `npc-${save.scene}-${index}`,
-    name: command.character,
-    role: command.role ?? t(cartridge.locale, command.type === 'party_change' && command.change === 'add' ? 'companion' : 'knownPerson'),
-    vitality: clamp(command.vitality ?? 100, 0, 100),
-    stress: clamp(command.stress ?? 0, 0, 100),
-    skills: command.skills?.map((skill) => ({ ...skill })) ?? [],
-    detail: command.detail,
-    lore: command.lore,
-    status: 'known', origin: 'generated', lastKnownLocation: save.location, updatedAtScene: save.scene,
+    name: command.character || definition?.name || command.characterId || `NPC ${index + 1}`,
+    role: command.role ?? definition?.role ?? t(cartridge.locale, command.type === 'party_change' && command.change === 'add' ? 'companion' : 'knownPerson'),
+    vitality: clamp(command.vitality ?? definition?.vitality ?? 100, 0, 100),
+    stress: clamp(command.stress ?? definition?.stress ?? 0, 0, 100),
+    skills: command.skills?.map((skill) => ({ ...skill })) ?? definition?.skills.map((skill) => ({ ...skill })) ?? [],
+    detail: command.detail ?? definition?.detail,
+    lore: command.lore ?? definition?.lore,
+    status: 'known', origin: definition ? 'cartridge' : 'generated', lastKnownLocation: save.location, updatedAtScene: save.scene,
   }
   save.characters.push(created)
   return created
@@ -89,7 +93,15 @@ type LegacyCharacterState = Pick<StorySave, 'blocks' | 'relationships'> & Partia
 export function normalizeCharacterState(candidate: LegacyCharacterState, cartridge: StoryCartridge): Pick<StorySave, 'characters' | 'partyMemberIds' | 'relationships'> {
   const staticById = new Map(cartridge.characters.map((character) => [character.id, character]))
   const inputCharacters = Array.isArray(candidate.characters) ? candidate.characters : []
-  const characters: StoryCharacter[] = inputCharacters.map((character) => {
+  const hasVisibleIntroduction = (character: StoryCharacter): boolean => candidate.blocks.some((block) => block.kind !== 'image' && `${block.speaker ?? ''} ${block.text}`.includes(character.name))
+  const characters: StoryCharacter[] = inputCharacters.filter((character) => {
+    const definition = staticById.get(character.id)
+    if (!definition?.hiddenUntilIntroduced) return true
+    if (character.status === 'companion' || character.status === 'departed') return true
+    if ((character.updatedAtScene ?? 0) > 0) return true
+    if (candidate.relationships.some((event) => event.characterId === character.id || event.actor === character.name)) return true
+    return hasVisibleIntroduction(character)
+  }).map((character) => {
     const definition = staticById.get(character.id)
     return {
       ...definition, ...character,
@@ -104,7 +116,7 @@ export function normalizeCharacterState(candidate: LegacyCharacterState, cartrid
     }
   })
   cartridge.characters.forEach((definition) => {
-    if (!characters.some((character) => character.id === definition.id)) characters.push(characterFromDefinition(definition))
+    if (!definition.hiddenUntilIntroduced && !characters.some((character) => character.id === definition.id)) characters.push(characterFromDefinition(definition))
   })
   const findOrCreate = (name: string, id?: string): StoryCharacter => {
     const found = (id ? characters.find((character) => character.id === id) : undefined)
@@ -325,6 +337,7 @@ export function applyParsedScene(
   imagePrompt?: string,
   imageSubject?: SceneImageSubject,
   dangerDirective?: DangerDirective,
+  domainResolution?: DomainActionResolution,
 ): StorySave {
   const next: StorySave = {
     ...save, locale: cartridge.locale, scene: save.scene + 1,
@@ -342,8 +355,10 @@ export function applyParsedScene(
   const confirmedFacts: Array<{ id: string; value: string }> = []
   let dangerCheckAdded = false
   let trueEndingReason = ''
+  const adjudicatedParsed: ParsedScene = domainResolution ? { ...parsed, commands: [] } : parsed
 
   const commands = [...parsed.commands, ...inferInventoryCommands(parsed, cartridge)]
+    .filter((command) => domainAllowsModelCommand(command, domainResolution))
   commands.forEach((command, index) => {
     const effectId = `effect-${next.scene}-${index}`
     if (command.type === 'choices') {
@@ -458,8 +473,6 @@ export function applyParsedScene(
     })
   }
 
-  next.facts = deriveCampaignFacts(next.facts)
-
   if (dangerDirective?.phase === 'resolution' && dangerDirective.check && !dangerCheckAdded) {
     const check = dangerDirective.check
     const succeeded = check.outcome === 'critical-success' || check.outcome === 'success' || check.outcome === 'costly-success'
@@ -468,7 +481,9 @@ export function applyParsedScene(
       data: { dc: check.dc, roll: check.roll, modifier: check.modifier, total: check.total, outcome: check.outcome },
     })
   }
-  effects.push(...settleDangerTurn(save, next, parsed, cartridge, dangerDirective))
+  if (domainResolution?.status !== 'rejected') effects.push(...settleDangerTurn(save, next, adjudicatedParsed, cartridge, dangerDirective))
+  effects.push(...applyDomainResolution(next, cartridge, domainResolution))
+  next.facts = deriveCampaignFacts(next.facts)
 
   if (trueEndingReason && next.finale.status !== 'complete' && canStartTrueEnding(next, cartridge)) {
     next.sessionEnded = true
@@ -482,8 +497,8 @@ export function applyParsedScene(
   // the dedicated resume action supplied by the Composer.
   if (!next.sessionEnded && next.choices.length < 2) next.choices = createRecoveryChoices(next, cartridge)
 
-  const image = chooseSceneImage(save, next, parsed, cartridge, imagePrompt, imageSubject, actionId)
-  const milestone = milestoneReason(parsed, dangerDirective)
+  const image = chooseSceneImage(save, next, adjudicatedParsed, cartridge, imagePrompt, imageSubject, actionId)
+  const milestone = milestoneReason(adjudicatedParsed, dangerDirective)
   next.blocks = [
     ...next.blocks,
     ...effects,
@@ -493,5 +508,5 @@ export function applyParsedScene(
       ...(milestone ? { milestone, videoStatus: 'queued' } : {}),
     })] : []),
   ]
-  return next
+  return syncDomainDerivedState(next, cartridge)
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { theErasedKingdom } from '../src/story/cartridges/theErasedKingdom'
-import { parseStoryProtocol } from '../src/story/engine/protocol'
+import { extractSceneImagePrompt, extractSceneImageSubject, parseStoryProtocol } from '../src/story/engine/protocol'
 import { applyParsedScene, createInitialSave } from '../src/story/engine/reducer'
 
 const scene = parseStoryProtocol(`The village road is fading.
@@ -28,5 +28,13 @@ assert.equal(applied.facts['witness-four'], true)
 const stableItem = parseStoryProtocol('[inventory: action="add" item_id="oldwood-two-way-mile-nail" item="Two-way Mile Nail" count="1"]', 'en')
 const inventoryCommand = stableItem.commands.find((command) => command.type === 'inventory')
 assert.equal(inventoryCommand?.type === 'inventory' ? inventoryCommand.itemId : undefined, 'oldwood-two-way-mile-nail')
+
+const malformedImageMetadata = parseStoryProtocol(`雨停在半空，你看见两条仍可前进的路。
+image_prompt:"SUBJECT A beneath suspended rain, no text"
+image_subject:"player"
+[choices: "沿路前进"|"检查悬雨"|"返回屋檐"]`, 'zh')
+assert.deepEqual(malformedImageMetadata.blocks.map((block) => block.text), ['雨停在半空，你看见两条仍可前进的路。'])
+assert.equal(extractSceneImageSubject(malformedImageMetadata.raw), 'player')
+assert.equal(extractSceneImagePrompt(malformedImageMetadata.raw), 'SUBJECT A beneath suspended rain, no text')
 
 console.log(JSON.stringify({ ok: true, facts: facts.length, factNotices: factNotices.length, choices: choices?.type === 'choices' ? choices.choices.length : 0 }))

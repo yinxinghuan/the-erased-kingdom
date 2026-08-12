@@ -188,6 +188,10 @@ export function parseStoryProtocol(raw: string, locale: Locale = 'zh'): ParsedSc
   let prose = raw
   for (const span of [...spans].reverse()) prose = prose.slice(0, span.start) + '\n' + prose.slice(span.end)
   prose = prose.replace(/\[[a-z_]+\s*:[^\]\n]*\]/gi, '\n')
+  // Image directives are transport metadata, not story copy. Some model
+  // responses omit one or both square brackets, so strip the whole line even
+  // when the otherwise valid directive is malformed.
+  prose = prose.replace(/^\s*\[?\s*(?:image_prompt|image_subject)\s*:\s*.*?\]?\s*$/gim, '\n')
   // Remove a protocol line that was cut off before its closing bracket. It is
   // machine residue, and leaving it at the tail prevents natural-choice scan.
   prose = prose.replace(/^\s*\[[a-z_]+\s*:.*$/gim, '\n')
@@ -216,13 +220,17 @@ export function parseStoryProtocol(raw: string, locale: Locale = 'zh'): ParsedSc
   }
 }
 
+export function isProtocolResidueText(value: string): boolean {
+  return /^\s*\[?\s*(?:image_prompt|image_subject)\s*:\s*.*?\]?\s*$/i.test(value)
+}
+
 export function extractSceneImagePrompt(content: string): string | undefined {
-  const match = content.match(/\[image_prompt:\s*(?:"([^"]+)"|'([^']+)'|([^\]\n]+))\s*\]/i)
+  const match = content.match(/(?:^|\n)\s*\[?\s*image_prompt\s*:\s*(?:"([^"]+)"|'([^']+)'|([^\]\n]+?))\s*\]?\s*(?=\n|$)/i)
   return (match?.[1] ?? match?.[2] ?? match?.[3])?.trim()
 }
 
 export function extractSceneImageSubject(content: string): SceneImageSubject | undefined {
-  const match = content.match(/\[image_subject:\s*(?:"([^"]+)"|'([^']+)'|([^\]\n]+))\s*\]/i)
+  const match = content.match(/(?:^|\n)\s*\[?\s*image_subject\s*:\s*(?:"([^"]+)"|'([^']+)'|([^\]\n]+?))\s*\]?\s*(?=\n|$)/i)
   const value = (match?.[1] ?? match?.[2] ?? match?.[3])?.trim().toLowerCase()
   return value === 'player' || value === 'environment' || value === 'others' ? value : undefined
 }

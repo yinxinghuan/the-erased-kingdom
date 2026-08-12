@@ -1,5 +1,6 @@
 import type { DemoTurn, StoryAdapter } from '../types'
 import { t } from '../i18n'
+import { domainDemoContent } from '../engine/domainRules'
 
 export function selectDemoTurn(action: string, demoTurns: DemoTurn[], minIndex: number): DemoTurn | undefined {
   const normalized = action.toLowerCase()
@@ -23,6 +24,10 @@ export const mockAdapter: StoryAdapter = {
     const turn = unused ?? context.cartridge.demoTurns[context.save.scene]
     onProgress?.({ label: t(context.locale, 'checkingState'), percent: 68 })
     await new Promise((resolve) => window.setTimeout(resolve, 440))
+    if (context.domainResolution) return { content: domainDemoContent(context.domainResolution) }
+    // Scripted demo turns are scene-indexed, so they can describe a different
+    // free-form action. Governed actions must use their own adjudicated beat.
+    if (context.domainResolution) return { content: domainDemoContent(context.domainResolution) }
     if (turn) return { content: turn.content, imagePrompt: turn.imagePrompt, imageSubject: turn.imageSubject }
     throw new Error(t(context.locale, 'demoComplete'))
   },
