@@ -7,7 +7,7 @@ const initial = createInitialSave(cartridge)
 const destination = cartridge.initialMap.find((node) => !node.current)?.label ?? '测试新地点'
 const parsed = parseStoryProtocol(`你把眼前已经发生的事处理完，准备离开。
 [map_update: new_location="${destination}" connected_to="${initial.location}"]
-[choices: "去帮国王送信"|"追赶突然出现的快递员"|"进入从未提过的玻璃王国"]`, cartridge.locale)
+[choices: "给火星总督送量子电报"|"追赶突然出现的银河快递员"|"喂养从未出现的像素独角兽"]`, cartridge.locale)
 const next = applyParsedScene(initial, parsed, cartridge, '结束当前行动')
 
 const transitionIndex = next.blocks.findIndex((block) => block.id === 'transition-1')
@@ -15,8 +15,13 @@ const visibleResultIndex = next.blocks.findIndex((block) => block.text.includes(
 assert.ok(transitionIndex >= 0, 'location change must create a visible transition anchor')
 assert.ok(transitionIndex < visibleResultIndex, 'transition anchor must appear before destination prose')
 assert.ok(next.blocks[transitionIndex].text.includes(cartridge.transitionAnchor ?? ''), 'transition must name the cartridge anchor')
-assert.ok(next.choices.length >= 2, 'the scene remains playable after rejecting bad choices')
-assert.ok(next.choices.every((choice) => !/国王|快递员|玻璃王国/.test(choice.label)), 'unintroduced choice nouns must be rejected')
+assert.ok(next.choices.length >= 1, 'the scene remains playable after rejecting bad choices without padding to a fixed count')
+assert.ok(next.choices.every((choice) => !/火星总督|银河快递员|像素独角兽/.test(choice.label)), 'unintroduced choice nouns must be rejected')
 assert.ok(next.decisionContext.includes('眼前已经发生的事'), 'decision context must come from visible prose')
 
-console.log(JSON.stringify({ game: cartridge.id, destination, transition: next.blocks[transitionIndex].text, choices: next.choices, decisionContext: next.decisionContext }, null, 2))
+const partiallyGrounded = parseStoryProtocol(`苹果谷的桥还留着一段没有褪色的石栏。
+[choices: "检查苹果谷的桥"|"给火星总督送量子电报"|"追赶从未出现的银河快递员"]`, cartridge.locale)
+const partialNext = applyParsedScene(initial, partiallyGrounded, cartridge, '查看石栏')
+assert.deepEqual(partialNext.choices.map((choice) => choice.label), ['检查苹果谷的桥'], 'one grounded choice survives without padding or unrelated recovery')
+
+console.log(JSON.stringify({ game: cartridge.id, destination, transition: next.blocks[transitionIndex].text, choices: next.choices, partialChoices: partialNext.choices, decisionContext: next.decisionContext }, null, 2))

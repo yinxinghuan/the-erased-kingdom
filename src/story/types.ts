@@ -59,9 +59,10 @@ export interface Choice { id: string; label: string }
 export type ImageBlockStatus = 'idle' | 'queued' | 'generating' | 'ready' | 'failed'
 export type VideoBlockStatus = 'idle' | 'queued' | 'generating' | 'ready' | 'failed'
 export const ITEM_IMAGE_STYLE_VERSION = 2
-export const SCENE_IMAGE_PROMPT_VERSION = 8
+export const SCENE_IMAGE_PROMPT_VERSION = 11
 export const PLAYER_IMAGE_REFERENCE_VERSION = 2
 export type SceneImageSubject = 'player' | 'environment' | 'others'
+export type SceneImagePerspective = 'first-person' | 'observer'
 export interface StoryBlock { id: string; kind: 'narration' | 'dialogue' | 'check' | 'change' | 'event' | 'summary' | 'image'; text: string; speaker?: string; tone?: string; data?: Record<string, string | number> }
 export interface EntityMetric { id?: string; label: string; value: string }
 export interface MapNode { id: string; label: string; connectedTo?: string; current?: boolean; visited?: boolean; detail?: string; lore?: string; facts?: string[] }
@@ -206,6 +207,7 @@ export interface StoryDangerDirector {
   escalationStats: string[]
   threatPalette: string[]
   methods: [string, string, string]
+  legacyMethods?: [string, string, string][]
   physicalCombat: 'none' | 'rare' | 'occasional'
   resolution: {
     skill: string
@@ -318,6 +320,11 @@ export interface StoryImageDirector {
   softCooldownTurns: number
   guaranteedTriggers: SceneImageTrigger[]
   softTriggers: SceneImageTrigger[]
+  perspective?: {
+    ordinary: 'observer' | 'balanced' | 'first-person-preferred'
+    importantDialogue: SceneImagePerspective
+    newLocation: SceneImagePerspective
+  }
 }
 
 export interface StoryMediaDirector {

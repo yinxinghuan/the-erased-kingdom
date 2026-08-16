@@ -32,9 +32,11 @@ function number(value: string | undefined, fallback = 0): number {
 
 function parseChoices(source: string): string[] {
   const body = source.replace(/^\s*choices\s*:/i, '').replace(/\]\s*$/, '').trim()
-  const quoted = [...body.matchAll(/["'“”‘’]([^"'“”‘’]+)["'“”‘’]/g)].map((match) => match[1].trim()).filter(Boolean)
-  if (quoted.length) return quoted
-  return body.replace(/^\[/, '').replace(/\]$/, '').split(/[|｜]/).map((choice) => choice.replace(/^["'“”‘’]|["'“”‘’]$/g, '').trim()).filter(Boolean)
+  return body.replace(/^\[/, '').replace(/\]$/, '').split(/[|｜]/).map((choice) => {
+    const trimmed = choice.trim()
+    const paired = trimmed.match(/^(?:"([\s\S]*)"|'([\s\S]*)'|“([\s\S]*)”|‘([\s\S]*)’)$/)
+    return (paired ? paired.slice(1).find((value) => value != null) ?? '' : trimmed).trim()
+  }).filter(Boolean)
 }
 
 function extractNaturalChoices(source: string): { prose: string; choices: string[] } {
@@ -192,6 +194,7 @@ export function parseStoryProtocol(raw: string, locale: Locale = 'zh'): ParsedSc
   // responses omit one or both square brackets, so strip the whole line even
   // when the otherwise valid directive is malformed.
   prose = prose.replace(/^\s*\[?\s*(?:image_prompt|image_subject)\s*:\s*.*?\]?\s*$/gim, '\n')
+  prose = prose.replace(/^\s*(?:请做出选择|请选择(?:下一步)?|接下来(?:你)?(?:要)?怎么做|what (?:will|do) you do next\??|make (?:a|your) choice|choose (?:your )?next action)\s*[。.!?？]*\s*$/gim, '\n')
   // Remove a protocol line that was cut off before its closing bracket. It is
   // machine residue, and leaving it at the tail prevents natural-choice scan.
   prose = prose.replace(/^\s*\[[a-z_]+\s*:.*$/gim, '\n')
@@ -221,7 +224,7 @@ export function parseStoryProtocol(raw: string, locale: Locale = 'zh'): ParsedSc
 }
 
 export function isProtocolResidueText(value: string): boolean {
-  return /^\s*\[?\s*(?:image_prompt|image_subject)\s*:\s*.*?\]?\s*$/i.test(value)
+  return /^\s*(?:\[?\s*(?:image_prompt|image_subject)\s*:\s*.*?\]?|请做出选择|请选择(?:下一步)?|接下来(?:你)?(?:要)?怎么做|what (?:will|do) you do next\??|make (?:a|your) choice|choose (?:your )?next action)\s*[。.!?？]*\s*$/i.test(value)
 }
 
 export function extractSceneImagePrompt(content: string): string | undefined {

@@ -205,7 +205,8 @@ function build(locale: Locale): StoryCartridge {
       'a ledger beast made from crossed-out names stalks a witness', 'hungry deserters seize a public supply cache and demand identity for food',
       'two restored histories place conflicting groups in one location', 'an official denial makes a companion begin to fade',
     ],
-    methods: zh ? ['挺身保护、战斗或直接突破', '观察地形与删除规则，寻找弱点或安全路线', '依靠伙伴、交涉或付出王印代价'] : ['protect, fight, or break through', 'read terrain and erasure rules for a weakness or safe route', 'rely on a companion, negotiate, or pay a seal cost'],
+    methods: zh ? ['用空白王印钉住正在消失的边缘', '按图册更正离你最近的一段道路', '沿仍有颜色的地标撤到实地'] : ['Pin the vanishing edge with the blank royal seal', 'Correct the nearest stretch of road in the atlas', 'Retreat along landmarks that still hold their color'],
+    legacyMethods: zh ? [['挺身保护、战斗或直接突破', '观察地形与删除规则，寻找弱点或安全路线', '依靠伙伴、交涉或付出王印代价']] : [['protect, fight, or break through', 'read terrain and erasure rules for a weakness or safe route', 'rely on a companion, negotiate, or pay a seal cost']],
     physicalCombat: 'occasional',
     resolution: { skill: s('见证者应变', 'Witnesscraft'), modifier: 2, dcBySeverity: [7, 10, 13, 16, 19], fallbackCosts: [{ statId: 'vitality', operation: 'remove', amount: 14 }] },
   }
@@ -254,8 +255,8 @@ function build(locale: Locale): StoryCartridge {
       'Toma is an older roadkeeper with his own different complete appearance',
       'horses, deer, wolves and ledger beasts can never inherit the player reference’s face, covering, costume, silhouette, colors or body traits',
     ],
-    imageDirector: { maxQuietTurns: 1, softCooldownTurns: 0, guaranteedTriggers: ['new-location', 'rare-item', 'party-change', 'chapter-checkpoint', 'relationship-change', 'objective-change', 'skill-outcome'], softTriggers: [] } satisfies StoryImageDirector,
-    mediaDirector: { imageProfile: 'fast-small', imageTarget: { width: 512, height: 640 }, videoEnabled: true, videoDuration: 5, minVideoGapTurns: 8 },
+    imageDirector: { maxQuietTurns: 1, softCooldownTurns: 0, guaranteedTriggers: ['new-location', 'rare-item', 'party-change', 'chapter-checkpoint', 'relationship-change', 'objective-change', 'skill-outcome'], softTriggers: [], perspective: { ordinary: 'balanced', importantDialogue: 'first-person', newLocation: 'observer' } } satisfies StoryImageDirector,
+    mediaDirector: { imageProfile: 'fast-small', imageTarget: { width: 512, height: 640 }, videoEnabled: false, videoDuration: 5, minVideoGapTurns: 8 },
     director: {
       mode: 'open-world', maxActiveThreads: 3,
       mainQuest: s(

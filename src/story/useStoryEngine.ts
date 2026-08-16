@@ -156,7 +156,7 @@ function normalizeSave(candidate: LegacyStorySave | null | undefined, cartridge:
         : { status: 'idle' as const },
     danger: normalizeDangerState(repaired.danger),
   } as StorySave
-  if (!normalized.sessionEnded && normalized.choices.length < 2) normalized.choices = createRecoveryChoices(normalized, cartridge)
+  if (!normalized.sessionEnded && normalized.choices.length === 0) normalized.choices = createRecoveryChoices(normalized, cartridge)
   return upgradePendingSceneImagePrompts(syncDomainDerivedState(normalized, cartridge), cartridge)
 }
 
@@ -418,7 +418,7 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
     commit((current) => ({
       ...current,
       sessionEnded: false,
-      choices: current.choices.length >= 2 ? current.choices : createRecoveryChoices(current, cartridge),
+      choices: current.choices.length > 0 ? current.choices : createRecoveryChoices(current, cartridge),
       finale: { ...current.finale, epilogueActive: true },
     }))
   }, [busy, cartridge, commit])

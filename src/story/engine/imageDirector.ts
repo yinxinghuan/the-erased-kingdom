@@ -1,10 +1,11 @@
-import { SCENE_IMAGE_PROMPT_VERSION, type ParsedScene, type SceneImageSubject, type SceneImageTrigger, type StoryCartridge, type StorySave } from '../types'
+import { SCENE_IMAGE_PROMPT_VERSION, type ParsedScene, type SceneImagePerspective, type SceneImageSubject, type SceneImageTrigger, type StoryCartridge, type StorySave } from '../types'
 
 export interface SceneImageDecision {
   prompt?: string
   source?: 'ai' | 'director'
   reason?: 'ai-proposal' | SceneImageTrigger | 'cadence'
   playerVisible?: boolean
+  perspective?: SceneImagePerspective
 }
 
 function lastScheduledScene(save: StorySave): number {
@@ -151,6 +152,19 @@ function playerIsVisible(cartridge: StoryCartridge, parsed: ParsedScene, proposa
   return false
 }
 
+function selectPerspective(next: StorySave, parsed: ParsedScene, cartridge: StoryCartridge, playerVisible: boolean, proposal = ''): SceneImagePerspective {
+  if (playerVisible) return 'observer'
+  const policy = cartridge.imageDirector?.perspective
+  if (!policy) return 'observer'
+  if (/\b(first[- ]person|point[- ]of[- ]view|POV|through (?:the )?protagonist'?s eyes)\b/i.test(proposal)) return 'first-person'
+  if (/\b(third[- ]person|observer|wide establishing|over[- ]the[- ]shoulder)\b/i.test(proposal)) return 'observer'
+  if (parsed.commands.some((command) => command.type === 'map_update')) return policy.newLocation
+  if (parsed.blocks.some((block) => block.kind === 'dialogue' && block.text.trim().length >= 12)) return policy.importantDialogue
+  if (policy.ordinary === 'observer') return 'observer'
+  if (policy.ordinary === 'first-person-preferred') return next.scene % 4 === 0 ? 'observer' : 'first-person'
+  return next.scene % 2 === 0 ? 'first-person' : 'observer'
+}
+
 function buildScenePrompt(
   cartridge: StoryCartridge,
   next: StorySave,
@@ -158,6 +172,7 @@ function buildScenePrompt(
   reason: SceneImageTrigger | 'cadence',
   aiProposal?: string,
   playerVisible = false,
+  perspective: SceneImagePerspective = 'observer',
 ): string {
   const rawBeat = visibleBeat(parsed) || next.objective
   const proposal = rendererSafeProposal(aiProposal)
@@ -172,8 +187,12 @@ function buildScenePrompt(
   const frameInstruction = target.height > target.width
     ? 'Create one fresh 4:5 portrait cinematic illustration in the established story world. It must survive a full-bleed responsive crop: keep the dominant action, identity-defining head or body cues, and essential props inside the central 58% safe column, and extend the environment naturally to every edge.'
     : 'Create one fresh 16:9 widescreen cinematic illustration in the established story world. Compose for a horizontal frame with useful negative space near the lower edge for a short interface subtitle.'
+  const cameraInstruction = perspective === 'first-person'
+    ? "FIRST-PERSON PLAYER-EYE VIEW. The camera is exactly the protagonist's eyes looking into the current scene. Keep the protagonist's face, head, back, shoulders, silhouette, reflection and entire body out of frame; do not use over-the-shoulder staging and do not invent hands unless the visible story explicitly established them."
+    : 'OBSERVER / THIRD-PERSON VIEW. Show the scene from an external cinematic camera with clear spatial relationships; if the protagonist is visible, preserve the supplied identity only on that actor.'
   return [
     frameInstruction,
+    cameraInstruction,
     acceptedProposal ? `Primary shot brief: ${acceptedProposal}.` : `Primary shot focus: ${focusFor(reason, parsed, next)}.`,
     `Latest visible story beat, which overrides older continuity hints: ${beat}.`,
     `Current location hint: ${CJK_RE.test(latestLocation(next, parsed)) ? (next.map.find((node) => node.current)?.id ?? 'current established location').replace(/-/g, ' ') : latestLocation(next, parsed)}. Use it only when consistent with the latest visible beat; never drag an earlier location into a newer scene.`,
@@ -223,9 +242,10 @@ export function upgradePendingSceneImagePrompts(save: StorySave, cartridge: Stor
       ...block,
       data: {
         ...block.data,
-        prompt: buildScenePrompt(cartridge, historical, parsed, 'cadence', undefined, visible),
+        prompt: buildScenePrompt(cartridge, historical, parsed, 'cadence', undefined, visible, selectPerspective(historical, parsed, cartridge, visible)),
         promptVersion: SCENE_IMAGE_PROMPT_VERSION,
         playerVisible: visible ? 'true' : 'false',
+        perspective: selectPerspective(historical, parsed, cartridge, visible),
         status: block.data?.status === 'generating' ? 'queued' : block.data?.status ?? 'queued',
       },
     }
@@ -245,27 +265,30 @@ export function chooseSceneImage(
   const proposal = aiPrompt?.trim()
   if (proposal) {
     const visible = playerIsVisible(cartridge, parsed, proposal, imageSubject, action)
+    const perspective = selectPerspective(next, parsed, cartridge, visible, proposal)
     return {
-      prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', proposal, visible),
+      prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', proposal, visible, perspective),
       source: 'ai',
       reason: 'ai-proposal',
       playerVisible: visible,
+      perspective,
     }
   }
 
   const director = cartridge.imageDirector
   const visible = playerIsVisible(cartridge, parsed, undefined, imageSubject, action)
+  const perspective = selectPerspective(next, parsed, cartridge, visible)
   const triggers = detectTriggers(previous, parsed)
   const guaranteed = director ? firstTrigger(triggers, director.guaranteedTriggers) : undefined
-  if (guaranteed) return { prompt: buildScenePrompt(cartridge, next, parsed, guaranteed, undefined, visible), source: 'director', reason: guaranteed, playerVisible: visible }
+  if (guaranteed) return { prompt: buildScenePrompt(cartridge, next, parsed, guaranteed, undefined, visible, perspective), source: 'director', reason: guaranteed, playerVisible: visible, perspective }
 
   const turnsSinceImage = next.scene - lastScheduledScene(previous)
   const soft = director ? firstTrigger(triggers, director.softTriggers) : undefined
   if (soft && turnsSinceImage >= director!.softCooldownTurns) {
-    return { prompt: buildScenePrompt(cartridge, next, parsed, soft, undefined, visible), source: 'director', reason: soft, playerVisible: visible }
+    return { prompt: buildScenePrompt(cartridge, next, parsed, soft, undefined, visible, perspective), source: 'director', reason: soft, playerVisible: visible, perspective }
   }
   if (!director || turnsSinceImage >= 1) {
-    return { prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', undefined, visible), source: 'director', reason: 'cadence', playerVisible: visible }
+    return { prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', undefined, visible, perspective), source: 'director', reason: 'cadence', playerVisible: visible, perspective }
   }
-  return { prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', undefined, visible), source: 'director', reason: 'cadence', playerVisible: visible }
+  return { prompt: buildScenePrompt(cartridge, next, parsed, 'cadence', undefined, visible, perspective), source: 'director', reason: 'cadence', playerVisible: visible, perspective }
 }

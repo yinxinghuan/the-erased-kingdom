@@ -7,6 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "test:perspective": "node --import tsx _qa/perspective-director.ts",
     "test:continuity": "TMPDIR=/private/tmp tsx _qa/continuity-gate.ts",
     "dev": "vite",
     "build": "tsc && vite build",

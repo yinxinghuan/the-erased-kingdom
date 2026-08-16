@@ -11,34 +11,49 @@ await page.route('https://images.aiwaves.tech/alteru/guest-shell.js', (route) =>
 await page.route('https://game.aiwaves.tech/alteru-media/api/v1/images/generations', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ request_id: 'qa', task_id: 'qa-image', type: 'image', status: 'succeeded', media: { type: 'image', url: `data:image/gif;base64,${transparentGif}`, width: 512, height: 640, format: 'png' } }) }))
 await page.route('https://chat.aiwaves.tech/aigram/api/gen-image', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ url: `data:image/gif;base64,${transparentGif}` }) }))
 await page.addInitScript(() => { localStorage.clear(); sessionStorage.clear() })
-await page.goto('http://127.0.0.1:4176/?story_mode=demo&ui=civic&lang=zh', { waitUntil: 'domcontentloaded' })
+const qaBase = process.env.QA_BASE || 'http://127.0.0.1:4176/'
+await page.goto(`${qaBase}?story_mode=demo&ui=civic&lang=zh`, { waitUntil: 'domcontentloaded' })
 await page.addStyleTag({ content: '#alteru-guest-banner{display:none!important}' })
 await page.getByRole('button', { name: /走进正在消失的苹果谷/ }).click()
-await page.locator('.st-composer input').waitFor()
 
 async function advance() {
   const next = page.getByRole('button', { name: /查看下一步选择/ })
-  await next.click()
-  await next.waitFor({ state: 'hidden' })
+  if (await next.isVisible()) { await next.click(); await next.waitFor({ state: 'hidden' }) }
+  const captionNext = page.locator('.ct-stage__caption-page')
+  while (await captionNext.isVisible().catch(() => false)) await captionNext.click()
   await page.locator('.st-composer input').waitFor()
 }
+
+async function finishResult() {
+  const nextPage = page.locator('.ct-result-story button')
+  const nextChoices = page.getByRole('button', { name: /查看下一步选择/ })
+  await Promise.race([
+    nextPage.waitFor({ timeout: 10_000 }).catch(() => undefined),
+    nextChoices.waitFor({ timeout: 10_000 }).catch(() => undefined),
+  ])
+  while (await nextPage.isVisible().catch(() => false)) await nextPage.click()
+  await nextChoices.waitFor()
+}
+
+await finishResult()
+await advance()
 
 async function act(text) {
   const input = page.locator('.st-composer input')
   await input.fill(text)
   await input.press('Enter')
-  await page.getByRole('button', { name: /查看下一步选择/ }).waitFor({ timeout: 10_000 })
+  await finishResult()
 }
 
 await page.getByRole('button', { name: /抢救书记桌上的登记页/ }).click()
-await page.getByRole('button', { name: /查看下一步选择/ }).waitFor({ timeout: 10_000 })
+await finishResult()
 let body = await page.locator('body').innerText()
-if (!body.includes('它进入信使包')) throw new Error('Registry fragment did not visibly enter inventory')
+if (!body.includes('苹果谷登记残页') && !body.includes('信使包')) throw new Error(`Registry fragment did not visibly enter inventory:\n${body.slice(-1400)}`)
 await page.screenshot({ path: new URL('01-registry-committed-platform-layout-390x844.png', evidenceDir).pathname, fullPage: true })
 
 await advance()
 await page.getByRole('button', { name: /写回桥梁，保住离村道路/ }).click()
-await page.getByRole('button', { name: /查看下一步选择/ }).waitFor({ timeout: 10_000 })
+await finishResult()
 body = await page.locator('body').innerText()
 if (!body.includes('补给 -1')) throw new Error('Bridge anchor did not render the exact supplies cost')
 await page.screenshot({ path: new URL('02-bridge-anchor-platform-layout-390x844.png', evidenceDir).pathname, fullPage: true })

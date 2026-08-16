@@ -37,4 +37,9 @@ assert.deepEqual(malformedImageMetadata.blocks.map((block) => block.text), ['雨
 assert.equal(extractSceneImageSubject(malformedImageMetadata.raw), 'player')
 assert.equal(extractSceneImagePrompt(malformedImageMetadata.raw), 'SUBJECT A beneath suspended rain, no text')
 
+const apostropheChoices = parseStoryProtocol(`[choices: "Play Mira's recording"|"Ask Nilo what's wrong"|"Climb to the upper deck"]`, 'en').commands.find((command) => command.type === 'choices')
+assert.equal(apostropheChoices?.type, 'choices')
+assert.equal(apostropheChoices?.type === 'choices' ? apostropheChoices.choices[0] : '', "Play Mira's recording")
+assert.equal(parseStoryProtocol(`请做出选择\n[choices: "继续"|"停下"]`, 'zh').blocks.length, 0)
+
 console.log(JSON.stringify({ ok: true, facts: facts.length, factNotices: factNotices.length, choices: choices?.type === 'choices' ? choices.choices.length : 0 }))

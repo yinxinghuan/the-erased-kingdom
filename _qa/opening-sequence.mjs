@@ -14,9 +14,13 @@ async function verify(width, height) {
   await page.goto(`${baseUrl}?story_mode=demo&ui=civic`, { waitUntil: 'networkidle' })
   await page.addStyleTag({ content: '#alteru-guest-banner,#alteru-guest-login{display:none!important}' })
   await page.locator('.st-primary').click()
+  while (await page.locator('.ct-result-story > button').count()) await page.locator('.ct-result-story > button').click()
+  const entryResult = page.locator('.ct-turn-next')
+  await entryResult.waitFor({ state: 'visible' })
+  await entryResult.click()
   await page.waitForSelector('.ct-stage__caption')
 
-  const expected = [/边境信使/, /路牌/, /哪有村庄/, /制图学徒/, /我叫玛拉/, /只能先保住一处/]
+  const expected = [/公文交给村书记/, /苹果谷/, /哪有村庄/, /玛拉/, /只能先保住一处/]
   for (let index = 0; index < expected.length; index += 1) {
     const text = (await page.locator('.ct-stage__caption p').textContent()) ?? ''
     assert.match(text, expected[index], `opening page ${index + 1} must preserve its authored beat`)
@@ -38,4 +42,4 @@ async function verify(width, height) {
 await verify(320, 568)
 await verify(390, 844)
 await browser.close()
-console.log(JSON.stringify({ ok: true, pages: 6, choicesAfterFinalPage: 3, viewports: ['320x568', '390x844'] }))
+console.log(JSON.stringify({ ok: true, pages: 5, choicesAfterFinalPage: 3, viewports: ['320x568', '390x844'] }))
