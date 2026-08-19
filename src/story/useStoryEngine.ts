@@ -12,6 +12,7 @@ import { shouldRepairDirectPlayerAction, shouldUsePlayerImageReference, upgradeP
 import { buildPlayerIdentityPrompt } from './engine/imageIdentity'
 import { buildDangerDirective, normalizeDangerState } from './engine/dangerDirector'
 import { domainOwnsDanger, resolveDomainAction, syncDomainDerivedState } from './engine/domainRules'
+import { recordAuthorityShadowSample } from './engine/authorityShadow'
 import { buildEndingSnapshot, normalizeFacts } from './engine/endingDirector'
 import { generateStoryEnding } from './engine/endingAdapter'
 import { t } from './i18n'
@@ -189,6 +190,8 @@ export function useStoryEngine(cartridge: StoryCartridge, initialMode: StoryMode
   const { generate: generateVideo } = useGenVideo()
   const mediaDirector = cartridge.mediaDirector ?? DEFAULT_MEDIA_DIRECTOR
   const persist = cloud.persist
+
+  useEffect(() => { recordAuthorityShadowSample(save, cartridge) }, [cartridge, save])
 
   useEffect(() => {
     if (!cloud.loaded || seeded.current) return

@@ -33,7 +33,8 @@
     "test:character-debut": "TMPDIR=/private/tmp tsx _qa/character-debut.ts",
     "test:domain": "TMPDIR=/private/tmp tsx _qa/domain-rules.ts",
     "test:opening": "TMPDIR=/private/tmp tsx _qa/opening-contract.ts",
-    "test:stage-narrative": "TMPDIR=/private/tmp tsx _qa/stage-narrative.ts"
+    "test:stage-narrative": "TMPDIR=/private/tmp tsx _qa/stage-narrative.ts",
+    "test:authority-shadow": "node --import tsx _qa/authority-shadow.ts"
   },
   "dependencies": {
     "react": "^18.3.1",
