@@ -6,6 +6,8 @@ import { buildErasedKingdomCampaign } from './theErasedKingdomCampaign'
 
 const coverImage = new URL('../img/worlds/the-erased-kingdom.webp', import.meta.url).href
 const entryImage = new URL('../img/worlds/the-erased-kingdom-entry.webp', import.meta.url).href
+const audioThemeUrl = new URL('../audio/assets/theme.mp3', import.meta.url).href
+const audioAmbienceUrl = new URL('../audio/assets/ambience.mp3', import.meta.url).href
 
 function build(locale: Locale): StoryCartridge {
   const zh = locale === 'zh'
@@ -225,6 +227,7 @@ function build(locale: Locale): StoryCartridge {
     },
     theme: { outer: '#11161b', surface: '#172129', paper: '#ebe8dd', ink: '#111a22', muted: '#6d7476', accent: '#2f63d8', danger: '#e34e38', gold: '#b68a4b', material: 'wayfarer' },
     audioTheme: {
+      recorded: { music: { src: audioThemeUrl, gain: .17 }, ambience: { src: audioAmbienceUrl, gain: .27 } },
       material: 'wayfarer', bpm: 58, rootHz: 146.83, scale: [0, 2, 5, 7, 9],
       levels: { music: .12, ambient: .13, sfx: .44, master: .48 },
       tension: [{ statId: 'vitality', direction: 'low', weight: .4 }, { statId: 'supplies', direction: 'low', weight: .25 }, { statId: 'recognition', direction: 'low', weight: .35 }],

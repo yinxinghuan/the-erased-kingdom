@@ -78,9 +78,15 @@ export function useStoryAudio(cartridge: StoryCartridge, save: StorySave) {
     })()
   }, [muted, unlock])
   const toggle = useCallback(() => {
-    if (muted || !ready) {
+    if (muted) {
       setMutedState(false)
       synthRef.current?.setMuted(false)
+      if (ready) synthRef.current?.cue('open')
+      else void unlock().then((running) => { if (running) synthRef.current?.cue('open') })
+      return
+    }
+    if (!ready) {
+      setMutedState(false)
       void unlock().then((running) => { if (running) synthRef.current?.cue('open') })
       return
     }

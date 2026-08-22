@@ -149,3 +149,6 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 
 - `engine/authorityShadow.ts` 只观察当前 cinematic 阶段已显示的选择，以现有确定性 `domainRules` 分类 `accepted / rejected / open`，并排除尚未进入游戏的开场空 tray 误报。
 - 结果只留在页面内存最近 100 条，不改推荐、不改阶段、不写存档或上传；`?authority_shadow=0` 可关闭，`npm run test:authority-shadow` 验证零改写。
+## 2026-08-23 混合音频升级
+
+本作保留原有按 region/motif/记忆压力变化的自适应合成层，并加入专属室内民谣主题与遗迹环境声。两层共享手势解锁、静音、后台暂停和自然回放间隔；生成音频失败时自适应合成层仍独立工作，不影响剧情与数值。

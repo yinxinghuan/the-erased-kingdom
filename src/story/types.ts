@@ -17,6 +17,15 @@ export interface StoryAudioTheme {
   tension: Array<{ statId: string; direction: 'high' | 'low'; weight: number }>
   regions?: StoryAudioRegion[]
   motifs?: Partial<Record<StoryAudioMotif, number[]>>
+  recorded?: StoryRecordedAudio
+}
+
+export interface StoryRecordedTrack { src: string; gain: number }
+export interface StoryRecordedAudio {
+  music?: StoryRecordedTrack
+  ambience?: StoryRecordedTrack
+  ambienceByLocationId?: Record<string, StoryRecordedTrack>
+  cues?: Record<string, StoryRecordedTrack>
 }
 
 export type StoryAudioTexture = 'orchard' | 'oldwood' | 'market' | 'bastion' | 'coast' | 'margins' | 'capital' | 'ledger'
