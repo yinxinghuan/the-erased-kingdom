@@ -136,7 +136,7 @@ Demo 模式现已提供贯穿八章的 `31` 回合中英文压缩战役，不再
 
 - Cartridge 通过 `transitionAnchor` 声明“玛拉的边境图册”；`src/story/engine/continuity.ts` 生成地点桥接、压缩 `decisionContext` 并核验选项名词是否已有可见依据。
 - `reducer.ts` 在 `map_update` 与受管辖地图事务提交前插入桥接，并在选择落入 UI 前执行 grounded-choice 检查；旧存档升级到 StorySave v8 时从现有目标补齐 `decisionContext`。
-- `filterGroundedChoices()` 逐条保留合法选项；一条成立也直接展示，只有零条时才生成与刚才行动、当前目标或同一危险直接相连的具体兜底，不再补“观察新变化 / 和同行者商量”。`_qa/continuity-gate.ts` 同时覆盖全坏与部分合法两组输入。
+- `filterGroundedChoices()` 逐条保留合法选项；一条成立也直接展示。平静态零条成立时快捷选项保持为空，由自由输入继续，不再生成会反复出现的通用兜底；危险态才恢复绑定同一威胁的确定性应对。`_qa/continuity-gate.ts` 同时覆盖全坏与部分合法两组输入。
 - `protocol.ts` 先按 `|` 分段再剥每段首尾成对引号，`Mira's recording` 一类单词内部撇号不会再破坏英文选项协议；`_qa/protocol.ts` 固定回归该输入。
 
 ## 镜头导演与迁移（2026-08-17）

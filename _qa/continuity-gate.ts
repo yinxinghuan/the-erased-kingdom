@@ -15,7 +15,7 @@ const visibleResultIndex = next.blocks.findIndex((block) => block.text.includes(
 assert.ok(transitionIndex >= 0, 'location change must create a visible transition anchor')
 assert.ok(transitionIndex < visibleResultIndex, 'transition anchor must appear before destination prose')
 assert.ok(next.blocks[transitionIndex].text.includes(cartridge.transitionAnchor ?? ''), 'transition must name the cartridge anchor')
-assert.ok(next.choices.length >= 1, 'the scene remains playable after rejecting bad choices without padding to a fixed count')
+assert.equal(next.choices.length, 0, 'all rejected choices leave the quick tray empty for free input instead of padding a fixed menu')
 assert.ok(next.choices.every((choice) => !/火星总督|银河快递员|像素独角兽/.test(choice.label)), 'unintroduced choice nouns must be rejected')
 assert.ok(next.decisionContext.includes('眼前已经发生的事'), 'decision context must come from visible prose')
 
